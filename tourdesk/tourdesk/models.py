@@ -140,7 +140,9 @@ class User(TimestampMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
     def set_password(self, password: str) -> None:
-        self.password_hash = generate_password_hash(password)
+        # pbkdf2 rather than Werkzeug's default scrypt: the Python that ships
+        # with macOS is built against LibreSSL and has no hashlib.scrypt.
+        self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
