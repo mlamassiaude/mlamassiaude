@@ -3,16 +3,23 @@
 {% block title %}Settings{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Agency settings</h1>
-  <div class="actions"><a class="btn" href="{{ url_for('core.users') }}">Team members</a></div>
+  <div class="title"><h1>Agency settings</h1></div>
+  <div class="actions"><a class="btn" href="{{ url_for('core.users') }}">{{ icon('roster', 16) }}Team members</a></div>
 </div>
-<form method="post" class="card form">
+{% set f = fields %}
+<form method="post" class="form">
   {{ csrf() }}
-  <div class="grid">{% for f in fields %}{{ render_field(f, obj) }}{% endfor %}</div>
-  <details class="placeholders">
-    <summary>Contract placeholders</summary>
-    <table>{% for key, label in placeholders.items() %}<tr><td><code>{{ '{{' }}{{ key }}{{ '}}' }}</code></td><td>{{ label }}</td></tr>{% endfor %}</table>
-  </details>
-  <div class="actions"><button class="btn primary">Save settings</button></div>
+  <section class="panel form-section"><h2>Agency</h2>
+    <div class="grid">{% for x in f if x.name in ('name','email','phone','vat_number','iban','bic','address') %}{{ render_field(x, obj) }}{% endfor %}</div></section>
+  <section class="panel form-section"><h2>Invoicing and numbering</h2>
+    <div class="grid">{% for x in f if x.name in ('default_currency','default_vat_rate','payment_terms_days','invoice_prefix','next_invoice_number','contract_prefix','next_contract_number','invoice_footer') %}{{ render_field(x, obj) }}{% endfor %}</div></section>
+  <section class="panel form-section"><h2>Contract template</h2>
+    <div class="grid">{% for x in f if x.name == 'contract_template' %}{{ render_field(x, obj) }}{% endfor %}</div>
+    <details class="placeholders">
+      <summary>{{ icon('plus', 16) }}Show available placeholders</summary>
+      <table><tbody>{% for key, label in placeholders.items() %}<tr><td><code>{{ '{{' }}{{ key }}{{ '}}' }}</code></td><td>{{ label }}</td></tr>{% endfor %}</tbody></table>
+    </details>
+  </section>
+  <div class="savebar"><button class="btn primary" type="submit">{{ icon('check', 16) }}Save settings</button></div>
 </form>
 {% endblock %}

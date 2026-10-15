@@ -1,23 +1,29 @@
 {% extends "base.html" %}
+{% from "_macros.html" import empty with context %}
 {% block title %}Promoters{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Promoters</h1>
+  <div class="title"><h1>Promoters <span class="count">{{ promoters|length }}</span></h1></div>
   <div class="actions">
-    <form method="get" class="inline"><input type="search" name="q" value="{{ q }}" placeholder="Search company, contact, city"></form>
-    <a class="btn primary" href="{{ url_for('roster.promoter_edit') }}">New promoter</a>
+    <form method="get" class="search" role="search">{{ icon('search', 16) }}<label class="sr-only" for="q">Search promoters</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Search company, contact, city"></form>
+    <a class="btn primary" href="{{ url_for('roster.promoter_edit') }}">{{ icon('plus', 16) }}New promoter</a>
   </div>
 </div>
-<div class="card">
+<section class="panel flush">
 {% if promoters %}
-  <table>
-    <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>City</th><th class="num">Shows</th></tr></thead>
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Company</th><th>Contact</th><th>City</th><th class="num">Shows</th></tr></thead>
     <tbody>
     {% for p in promoters %}
-      <tr><td><a href="{{ url_for('roster.promoter', promoter_id=p.id) }}">{{ p.company }}</a></td><td>{{ p.contact_name }}</td><td>{{ p.email }}</td><td>{{ p.city }}</td><td class="num">{{ p.shows|length }}</td></tr>
+      <tr><td><a href="{{ url_for('roster.promoter', promoter_id=p.id) }}"><strong>{{ p.company }}</strong></a>{% if p.vat_number %}<span class="sub">VAT {{ p.vat_number }}</span>{% endif %}</td>
+        <td>{{ p.contact_name or '–' }}{% if p.email %}<span class="sub">{{ p.email }}</span>{% endif %}</td>
+        <td>{{ p.city }}<span class="sub">{{ p.country }}</span></td>
+        <td class="num">{{ p.shows|length }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
-{% else %}<p class="empty">No promoters{% if q %} match "{{ q }}"{% endif %}.</p>{% endif %}
-</div>
+  </div>
+{% else %}<div style="padding: 1.2rem 1.3rem">{{ empty('No promoters match "' ~ q ~ '"' if q else 'No promoters yet', 'Promoters are who you send contracts and deposit invoices to.', 'promoter') }}</div>{% endif %}
+</section>
 {% endblock %}

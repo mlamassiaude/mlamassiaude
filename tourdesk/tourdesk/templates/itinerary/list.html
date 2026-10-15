@@ -1,27 +1,29 @@
 {% extends "base.html" %}
-{% from "_macros.html" import artist_dot with context %}
+{% from "_macros.html" import artist_tag, empty with context %}
 {% block title %}Itineraries{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Itineraries</h1>
-  <div class="actions"><a class="btn primary" href="{{ url_for('itinerary.itinerary_edit') }}">New itinerary</a></div>
+  <div class="title"><h1>Itineraries <span class="count">{{ itineraries|length }}</span></h1></div>
+  <div class="actions"><a class="btn primary" href="{{ url_for('itinerary.itinerary_edit') }}">{{ icon('plus', 16) }}New itinerary</a></div>
 </div>
-<p class="muted">An itinerary pulls every show, travel leg and hotel for one artist across a date range into a day by day plan you can print or share with the travel party.</p>
-<div class="card">
+<p class="lede">An itinerary gathers every show, travel leg and hotel for one artist across a date range into a day by day tour book. Print it, or switch on a share link for the travel party.</p>
+<section class="panel flush">
 {% if itineraries %}
-  <table>
-    <thead><tr><th>Title</th><th>Artist</th><th>From</th><th>To</th><th>Sharing</th></tr></thead>
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Title</th><th>Artist</th><th>Dates</th><th>Sharing</th></tr></thead>
     <tbody>
     {% for it in itineraries %}
       <tr>
-        <td><a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}">{{ it.title }}</a></td>
-        <td>{{ artist_dot(it.artist) }}{{ it.artist.name }}</td>
-        <td>{{ it.start_date|d }}</td><td>{{ it.end_date|d }}</td>
-        <td>{{ 'Link on' if it.share_enabled else 'Private' }}</td>
+        <td><a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}"><strong>{{ it.title }}</strong></a></td>
+        <td>{{ artist_tag(it.artist) }}</td>
+        <td class="nowrap">{{ it.start_date|d('%d %b') }} to {{ it.end_date|d }}<span class="sub">{{ (it.end_date - it.start_date).days + 1 }} days</span></td>
+        <td>{% if it.share_enabled %}<span class="chip s-confirmed">Link on</span>{% else %}<span class="chip">Private</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-{% else %}<p class="empty">No itineraries yet.</p>{% endif %}
-</div>
+  </div>
+{% else %}<div style="padding: 1.2rem 1.3rem">{{ empty('No itineraries yet', 'Start one from an artist page to pre-fill the dates of their upcoming run.', 'itinerary') }}</div>{% endif %}
+</section>
 {% endblock %}

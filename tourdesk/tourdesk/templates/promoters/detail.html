@@ -1,32 +1,29 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, post_button, artist_dot, show_place with context %}
+{% from "_macros.html" import post_button, tour_dates, empty with context %}
 {% block title %}{{ promoter.company }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>{{ promoter.company }}</h1>
+  <div class="title"><p class="crumb"><a href="{{ url_for('roster.promoters') }}">Promoters</a></p><h1>{{ promoter.company }}</h1>
+    <p class="crumb muted">{{ promoter.contact_name or 'No contact set' }}{% if promoter.city %} · {{ promoter.city }}{% endif %}</p></div>
   <div class="actions">
-    <a class="btn" href="{{ url_for('roster.promoter_edit', promoter_id=promoter.id) }}">Edit</a>
-    {% if not promoter.shows %}{{ post_button(url_for('roster.promoter_delete', promoter_id=promoter.id), 'Delete', 'danger', 'Delete this promoter?') }}{% endif %}
+    {% if not promoter.shows %}{{ post_button(url_for('roster.promoter_delete', promoter_id=promoter.id), 'Delete', 'danger', 'Delete this promoter?', icon_name='trash') }}{% endif %}
+    <a class="btn primary" href="{{ url_for('roster.promoter_edit', promoter_id=promoter.id) }}">{{ icon('edit', 16) }}Edit</a>
   </div>
 </div>
 <div class="columns">
-  <section class="card">
-    <h2>Shows with this promoter</h2>
-    {% if shows %}
-    <table><tbody>
-      {% for s in shows %}<tr><td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d }}</a></td><td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td><td>{{ show_place(s) }}</td><td>{{ status_badge(s.status) }}</td><td class="num">{{ s.fee|money(s.currency) }}</td></tr>{% endfor %}
-    </tbody></table>
-    {% else %}<p class="empty">No shows yet.</p>{% endif %}
+  <section class="panel" aria-labelledby="h-shows">
+    <div class="panel-head"><h2 id="h-shows">Shows with this promoter</h2><span class="meta">{{ shows|length }}</span></div>
+    {% if shows %}{{ tour_dates(shows) }}{% else %}{{ empty('No shows yet') }}{% endif %}
   </section>
-  <aside class="card">
+  <aside class="panel" aria-labelledby="h-details">
+    <div class="panel-head"><h2 id="h-details">Details</h2></div>
     <dl class="facts">
-      <dt>Contact</dt><dd>{{ promoter.contact_name or '–' }}</dd>
-      <dt>Email</dt><dd>{{ promoter.email or '–' }}</dd>
+      <dt>Email</dt><dd>{% if promoter.email %}<a href="mailto:{{ promoter.email }}">{{ promoter.email }}</a>{% else %}–{% endif %}</dd>
       <dt>Phone</dt><dd>{{ promoter.phone or '–' }}</dd>
       <dt>VAT</dt><dd>{{ promoter.vat_number or '–' }}</dd>
       <dt>Billing</dt><dd class="pre">{{ promoter.billing_address or '–' }}</dd>
     </dl>
-    {% if promoter.notes %}<p class="pre">{{ promoter.notes }}</p>{% endif %}
+    {% if promoter.notes %}<h3>Notes</h3><p class="pre" style="margin: 0">{{ promoter.notes }}</p>{% endif %}
   </aside>
 </div>
 {% endblock %}

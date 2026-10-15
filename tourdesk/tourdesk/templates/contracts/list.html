@@ -1,38 +1,40 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, artist_dot, show_place with context %}
+{% from "_macros.html" import status_badge, artist_tag, show_where, empty with context %}
 {% block title %}Contracts{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Contracts</h1>
+  <div class="title"><h1>Contracts <span class="count">{{ contracts|length }}</span></h1></div>
   <div class="actions">
     <form method="get" class="inline">
-      <select name="status" onchange="this.form.submit()">
+      <label class="sr-only" for="f-status">Status</label>
+      <select id="f-status" name="status" onchange="this.form.submit()">
         <option value="">Any status</option>
         {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == status }}>{{ label }}</option>{% endfor %}
       </select>
     </form>
   </div>
 </div>
-<p class="muted">Contracts are generated from a show. Open a show and click Generate. The template lives in Settings.</p>
-<div class="card">
+<p class="lede">Contracts are generated from a show: open the show and click Generate. The wording comes from the template in Settings.</p>
+<section class="panel flush">
 {% if contracts %}
-  <table>
-    <thead><tr><th>Number</th><th>Show date</th><th>Artist</th><th>Where</th><th>Promoter</th><th>Status</th><th>Sent</th><th>Signed</th></tr></thead>
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Number</th><th>Show</th><th>Artist</th><th>Promoter</th><th>Status</th><th>Sent</th><th>Signed</th></tr></thead>
     <tbody>
     {% for c in contracts %}
       <tr>
-        <td><a href="{{ url_for('documents.contract', contract_id=c.id) }}">{{ c.number }}</a></td>
-        <td class="nowrap">{{ c.show.date|d }}</td>
-        <td>{{ artist_dot(c.show.artist) }}{{ c.show.artist.name }}</td>
-        <td>{{ show_place(c.show) }}</td>
-        <td>{{ c.show.promoter.company if c.show.promoter else '' }}</td>
+        <td><a href="{{ url_for('documents.contract', contract_id=c.id) }}"><strong>{{ c.number }}</strong></a></td>
+        <td>{{ show_where(c.show) }}<span class="sub">{{ c.show.date|d('%a %d %b %Y') }}</span></td>
+        <td>{{ artist_tag(c.show.artist) }}</td>
+        <td>{{ c.show.promoter.company if c.show.promoter else '–' }}</td>
         <td>{{ status_badge(c.status) }}</td>
-        <td>{{ c.sent_at|d }}</td>
-        <td>{{ c.signed_at|d }}</td>
+        <td class="nowrap">{{ c.sent_at|d or '–' }}</td>
+        <td class="nowrap">{{ c.signed_at|d or '–' }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-{% else %}<p class="empty">No contracts{% if status %} with this status{% endif %}.</p>{% endif %}
-</div>
+  </div>
+{% else %}<div style="padding: 1.2rem 1.3rem">{{ empty('No contracts with this status' if status else 'No contracts yet', '', 'contract') }}</div>{% endif %}
+</section>
 {% endblock %}

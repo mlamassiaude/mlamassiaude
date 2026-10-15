@@ -1,66 +1,71 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, post_button, csrf with context %}
+{% from "_macros.html" import status_badge, post_button, csrf, artist_tag, show_where with context %}
 {% block title %}Invoice {{ invoice.display_number }}{% endblock %}
 {% block content %}
 <div class="page-head no-print">
-  <div>
-    {% if invoice.show %}<p class="crumb"><a href="{{ url_for('shows.show', show_id=invoice.show.id) }}">{{ invoice.show.title }}, {{ invoice.show.date|d }}</a></p>{% endif %}
+  <div class="title">
+    {% if invoice.show %}<p class="crumb">{{ artist_tag(invoice.show.artist) }}<a href="{{ url_for('shows.show', show_id=invoice.show.id) }}">{{ show_where(invoice.show) }}, {{ invoice.show.date|d }}</a></p>{% endif %}
     <h1>{{ invoice.display_number }} {{ status_badge(invoice.display_status) }}</h1>
   </div>
   <div class="actions">
     {% if invoice.status == 'draft' %}
-      <a class="btn" href="{{ url_for('documents.invoice_edit', invoice_id=invoice.id) }}">Edit details</a>
-      {{ post_button(url_for('documents.invoice_issue', invoice_id=invoice.id), 'Issue invoice', 'primary', 'Issue this invoice? It gets a final number and is locked.') }}
-      {{ post_button(url_for('documents.invoice_cancel', invoice_id=invoice.id), 'Delete draft', 'danger', 'Delete this draft?') }}
+      {{ post_button(url_for('documents.invoice_cancel', invoice_id=invoice.id), 'Delete draft', 'danger', 'Delete this draft?', icon_name='trash') }}
+      <a class="btn" href="{{ url_for('documents.invoice_edit', invoice_id=invoice.id) }}">{{ icon('edit', 16) }}Edit details</a>
+      <button class="btn" type="button" onclick="window.print()">{{ icon('print', 16) }}Print / PDF</button>
+      {{ post_button(url_for('documents.invoice_issue', invoice_id=invoice.id), 'Issue invoice', 'primary', 'Issue this invoice? It gets a final number and is locked.', icon_name='check') }}
     {% elif invoice.status == 'sent' %}
-      {{ post_button(url_for('documents.invoice_paid', invoice_id=invoice.id), 'Mark as paid', 'primary') }}
       {{ post_button(url_for('documents.invoice_cancel', invoice_id=invoice.id), 'Cancel invoice', 'danger', 'Cancel this invoice? The number stays reserved.') }}
+      <button class="btn" type="button" onclick="window.print()">{{ icon('print', 16) }}Print / PDF</button>
+      {{ post_button(url_for('documents.invoice_paid', invoice_id=invoice.id), 'Mark as paid', 'primary', icon_name='check') }}
+    {% else %}
+      <button class="btn" type="button" onclick="window.print()">{{ icon('print', 16) }}Print / PDF</button>
     {% endif %}
-    <button class="btn" onclick="window.print()">Print / PDF</button>
   </div>
 </div>
 
 {% if invoice.status == 'draft' %}
-<div class="card no-print">
-  <h2>Lines</h2>
+<section class="panel no-print" aria-labelledby="lines-h">
+  <div class="panel-head"><h2 id="lines-h">Lines</h2><span class="meta">Drafts can be changed until you issue them</span></div>
+  <div class="table-scroll">
   <table>
     <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Total</th><th></th></tr></thead>
     <tbody>
       {% for line in invoice.lines %}
       <tr><td>{{ line.description }}</td><td class="num">{{ '%g'|format(line.quantity) }}</td><td class="num">{{ line.unit_price|money }}</td><td class="num">{{ line.total|money }}</td>
-        <td>{{ post_button(url_for('documents.invoice_line_delete', line_id=line.id), '×', 'small link') }}</td></tr>
-      {% endfor %}
+        <td class="num">{{ post_button(url_for('documents.invoice_line_delete', line_id=line.id), 'Remove', 'link danger small') }}</td></tr>
+      {% else %}<tr><td colspan="5" class="muted">No lines yet. Add one below.</td></tr>{% endfor %}
     </tbody>
   </table>
+  </div>
   <form method="post" action="{{ url_for('documents.invoice_line_add', invoice_id=invoice.id) }}" class="line-form">
     {{ csrf() }}
-    <input name="description" placeholder="Description" required>
-    <input name="quantity" type="number" step="0.01" value="1" aria-label="Quantity">
-    <input name="unit_price" type="number" step="0.01" placeholder="Unit price" aria-label="Unit price" required>
-    <button class="btn">Add line</button>
+    <input name="description" placeholder="Description, e.g. Backline hire" aria-label="Description" required>
+    <input name="quantity" type="number" step="0.01" value="1" aria-label="Quantity" inputmode="decimal">
+    <input name="unit_price" type="number" step="0.01" placeholder="Unit price" aria-label="Unit price" inputmode="decimal" required>
+    <button class="btn" type="submit">{{ icon('plus', 16) }}Add line</button>
   </form>
-</div>
+</section>
 {% endif %}
 
 <article class="paper invoice">
-  <div class="paper-head">
-    <div>
-      <h2 class="doc-title">{{ 'Invoice' if invoice.number else 'Draft invoice' }}</h2>
-      <strong>{{ agency.name }}</strong><br><span class="pre">{{ agency.address }}</span><br>
-      {{ agency.email }} {{ agency.phone }}{% if agency.vat_number %}<br>VAT {{ agency.vat_number }}{% endif %}
+  <header class="letterhead">
+    <div><span class="org">{{ agency.name }}</span><span class="pre">{{ agency.address }}</span></div>
+    <div class="right">{{ agency.email }}<br>{{ agency.phone }}{% if agency.vat_number %}<br>VAT {{ agency.vat_number }}{% endif %}</div>
+  </header>
+  <h2 class="doc-title">{{ 'Invoice' if invoice.number else 'Draft invoice' }}</h2>
+  <div class="doc-cols">
+    <div class="bill-to">
+      <small>Bill to</small>
+      <strong>{{ invoice.bill_to_name or 'No recipient set' }}</strong><br>
+      <span class="pre">{{ invoice.bill_to_address }}</span>
+      {% if invoice.bill_to_vat %}<br>VAT {{ invoice.bill_to_vat }}{% endif %}
     </div>
-    <dl class="right meta">
+    <dl class="meta">
       <dt>Invoice no.</dt><dd>{{ invoice.number or 'Not issued yet' }}</dd>
       <dt>Date</dt><dd>{{ invoice.issue_date|d if invoice.issue_date else '–' }}</dd>
-      <dt>Due</dt><dd>{{ invoice.due_date|d if invoice.due_date else 'On issue + ' ~ agency.payment_terms_days ~ ' days' }}</dd>
+      <dt>Due</dt><dd>{{ invoice.due_date|d if invoice.due_date else 'Issue date + ' ~ agency.payment_terms_days ~ ' days' }}</dd>
       {% if invoice.paid_at %}<dt>Paid</dt><dd>{{ invoice.paid_at|d }}</dd>{% endif %}
     </dl>
-  </div>
-  <div class="bill-to">
-    <small class="muted">Bill to</small><br>
-    <strong>{{ invoice.bill_to_name or 'No recipient set' }}</strong><br>
-    <span class="pre">{{ invoice.bill_to_address }}</span>
-    {% if invoice.bill_to_vat %}<br>VAT {{ invoice.bill_to_vat }}{% endif %}
   </div>
   <table class="lines">
     <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead>
@@ -75,10 +80,10 @@
       <tr class="grand"><td colspan="3" class="num">Total due</td><td class="num">{{ invoice.total|money(invoice.currency) }}</td></tr>
     </tfoot>
   </table>
-  {% if invoice.notes %}<p class="pre">{{ invoice.notes }}</p>{% endif %}
+  {% if invoice.notes %}<p class="pre" style="margin-top: 1.4rem">{{ invoice.notes }}</p>{% endif %}
   <div class="payment">
-    {% if agency.iban %}<p><strong>Payment details</strong><br>IBAN {{ agency.iban }}{% if agency.bic %} · BIC {{ agency.bic }}{% endif %}<br>Reference: {{ invoice.number or 'invoice number' }}</p>{% endif %}
-    {% if agency.invoice_footer %}<p class="pre small">{{ agency.invoice_footer }}</p>{% endif %}
+    {% if agency.iban %}<p><strong style="color: var(--ink)">Payment details</strong><br>IBAN {{ agency.iban }}{% if agency.bic %} · BIC {{ agency.bic }}{% endif %}<br>Reference: {{ invoice.number or 'invoice number' }}</p>{% endif %}
+    {% if agency.invoice_footer %}<p class="pre small" style="margin: 0">{{ agency.invoice_footer }}</p>{% endif %}
   </div>
 </article>
 {% endblock %}

@@ -1,90 +1,103 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, artist_dot, show_place with context %}
+{% from "_macros.html" import status_badge, artist_tag, tour_dates, empty, dateblock with context %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Dashboard</h1>
+  <div class="title">
+    <h1>{{ today.strftime('%A %d %B') }}</h1>
+    <p class="crumb muted">
+      {{ confirmed_30 }} confirmed {{ 'show' if confirmed_30 == 1 else 'shows' }} in the next 30 days
+      · {{ open_options }} open {{ 'option' if open_options == 1 else 'options' }}
+    </p>
+  </div>
   <div class="actions">
-    <a class="btn" href="{{ url_for('roster.artist_new') }}">Add artist</a>
-    <a class="btn primary" href="{{ url_for('shows.show_new') }}">New show</a>
+    <a class="btn" href="{{ url_for('roster.artist_new') }}">{{ icon('plus', 16) }}Add artist</a>
+    <a class="btn primary" href="{{ url_for('shows.show_new') }}">{{ icon('calendar-plus', 16) }}New show</a>
   </div>
 </div>
 
-<div class="kpis">
-  <a class="kpi" href="{{ url_for('shows.shows', status='confirmed') }}"><strong>{{ confirmed_30 }}</strong><span>Confirmed shows in the next 30 days</span></a>
-  <a class="kpi" href="{{ url_for('shows.shows', status='option') }}"><strong>{{ open_options }}</strong><span>Open options and pending offers</span></a>
-  <a class="kpi" href="{{ url_for('documents.contracts', status='sent') }}"><strong>{{ awaiting_signature|length }}</strong><span>Contracts awaiting signature</span></a>
-  <a class="kpi {{ 'alert' if overdue }}" href="{{ url_for('documents.invoices', status='overdue' if overdue else 'sent') }}">
-    <strong>{{ overdue|length }} / {{ outstanding|length }}</strong><span>Overdue / outstanding invoices</span>
-  </a>
-</div>
-
 <div class="columns">
-  <section class="card">
-    <h2>Upcoming shows</h2>
+  <section class="panel" aria-labelledby="next-up">
+    <div class="panel-head">
+      <h2 id="next-up">Next up</h2>
+      <a href="{{ url_for('shows.shows') }}" class="meta">All shows {{ icon('arrow', 14) }}</a>
+    </div>
     {% if upcoming %}
-    <table>
-      <thead><tr><th>Date</th><th>Artist</th><th>Where</th><th>Status</th><th class="num">Fee</th></tr></thead>
-      <tbody>
-      {% for s in upcoming %}
-        <tr>
-          <td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d('%a %d %b') }}</a></td>
-          <td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td>
-          <td>{{ show_place(s) }}</td>
-          <td>{{ status_badge(s.status) }}</td>
-          <td class="num">{{ s.fee|money(s.currency) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+      {{ tour_dates(upcoming) }}
     {% else %}
-      <p class="empty">No upcoming shows yet. <a href="{{ url_for('shows.show_new') }}">Create the first one.</a></p>
+      {{ empty('No upcoming shows yet', 'Create a show from an artist page, or click a day in the calendar.') }}
+      <p style="margin-top: 1rem"><a class="btn primary" href="{{ url_for('shows.show_new') }}">{{ icon('calendar-plus', 16) }}Create the first show</a></p>
     {% endif %}
   </section>
 
-  <aside>
-    <section class="card">
-      <h2>To do</h2>
-      <ul class="todo">
+  <div>
+    <section class="panel" aria-labelledby="attention">
+      <div class="panel-head"><h2 id="attention">Needs attention</h2></div>
+      <ul class="queue">
+        {% for i in overdue %}
+          <li class="bad"><span class="q-icon">{{ icon('alert', 16) }}</span>
+            <div><strong><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.number }}</a> is overdue</strong>
+            <span>{{ i.total|money(i.currency) }} from {{ i.bill_to_name }}, due {{ i.due_date|d }}</span></div></li>
+        {% endfor %}
         {% for s in shows_needing_contract %}
-          <li><a href="{{ url_for('shows.show', show_id=s.id) }}">Issue contract</a> for {{ s.artist.name }}, {{ s.date|d }}</li>
+          <li><span class="q-icon">{{ icon('file-plus', 16) }}</span>
+            <div><strong><a href="{{ url_for('shows.show', show_id=s.id) }}">Issue a contract</a></strong>
+            <span>{{ s.artist.name }}, {{ s.date|d('%d %b') }}, {{ s.display_city }}</span></div></li>
         {% endfor %}
         {% for c in awaiting_signature %}
-          <li><a href="{{ url_for('documents.contract', contract_id=c.id) }}">Chase signature</a> on {{ c.number }} ({{ c.show.artist.name }}, sent {{ c.sent_at|d }})</li>
+          <li><span class="q-icon">{{ icon('contract', 16) }}</span>
+            <div><strong><a href="{{ url_for('documents.contract', contract_id=c.id) }}">Chase signature on {{ c.number }}</a></strong>
+            <span>{{ c.show.artist.name }}, sent {{ c.sent_at|d('%d %b') }}{% if c.show.promoter %} to {{ c.show.promoter.company }}{% endif %}</span></div></li>
         {% endfor %}
-        {% for i in overdue %}
-          <li class="alert"><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.number }}</a> is overdue: {{ i.total|money(i.currency) }} from {{ i.bill_to_name }}</li>
+        {% for item in to_book %}
+          <li class="warn"><span class="q-icon">{{ icon(item.kind if item.kind in ('flight','train','car','ground','hotel') else 'other', 16) }}</span>
+            <div><strong><a href="{{ url_for('shows.logistics_edit', item_id=item.id) }}">Book {{ item.label }}</a></strong>
+            <span>{{ item.artist.name }}, {{ item.start_at|d('%a %d %b') }}</span></div></li>
         {% endfor %}
-        {% if not (shows_needing_contract or awaiting_signature or overdue) %}<li class="muted">Nothing urgent. Nice.</li>{% endif %}
+        {% if not (overdue or shows_needing_contract or awaiting_signature or to_book) %}
+          <li class="ok"><span class="q-icon">{{ icon('done', 16) }}</span><div><strong>All clear</strong><span>No contracts, invoices or bookings waiting on you.</span></div></li>
+        {% endif %}
       </ul>
     </section>
-    <section class="card">
-      <h2>Outstanding receivables</h2>
-      {% for currency, total in outstanding_totals.items() %}
-        <p class="big">{{ total|money(currency) }}</p>
+
+    <section class="panel" aria-labelledby="money-in">
+      <div class="panel-head"><h2 id="money-in">Money owed to you</h2><a class="meta" href="{{ url_for('documents.invoices', status='sent') }}">Invoices {{ icon('arrow', 14) }}</a></div>
+      {% if outstanding_totals %}
+        <dl class="ledger">
+          {% for currency, total in outstanding_totals.items() %}
+            <div><dt>Outstanding {{ currency }}</dt><dd>{{ total|money(currency) }}</dd></div>
+          {% endfor %}
+          {% if overdue %}<div class="bad"><dt>Overdue</dt><dd>{{ overdue|length }} {{ 'invoice' if overdue|length == 1 else 'invoices' }}</dd></div>{% endif %}
+        </dl>
       {% else %}
-        <p class="muted">All issued invoices are paid.</p>
-      {% endfor %}
+        {{ empty('Nothing outstanding', 'Every issued invoice has been paid.', 'done') }}
+      {% endif %}
     </section>
-  </aside>
+  </div>
 </div>
 
-<section class="card">
-  <h2>{{ year }} by artist <small class="muted">confirmed and played shows</small></h2>
+<section class="panel flush" aria-labelledby="by-artist">
+  <div class="panel-head"><h2 id="by-artist">{{ year }} by artist</h2><span class="meta">Confirmed and played shows</span></div>
   {% if per_artist %}
-  <table>
-    <thead><tr><th>Artist</th><th class="num">Shows</th><th class="num">Gross fees</th><th class="num">Agency commission</th></tr></thead>
+  {% set max_shows = per_artist|map(attribute='1')|map(attribute='shows')|max %}
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Artist</th><th>Shows</th><th class="hide-sm"></th><th class="num">Gross fees</th><th class="num">Commission</th></tr></thead>
     <tbody>
     {% for artist, row in per_artist %}
       <tr>
-        <td>{{ artist_dot(artist) }}<a href="{{ url_for('roster.artist', artist_id=artist.id) }}">{{ artist.name }}</a></td>
-        <td class="num">{{ row.shows }}</td>
-        <td class="num">{% for c, v in row.gross.items() %}{{ v|money(c) }}<br>{% endfor %}</td>
-        <td class="num">{% for c, v in row.commission.items() %}{{ v|money(c) }}<br>{% endfor %}</td>
+        <td>{{ artist_tag(artist) }}</td>
+        <td class="num" style="width: 4rem">{{ row.shows }}<span class="hide-lg"> {{ 'show' if row.shows == 1 else 'shows' }}</span></td>
+        <td class="hide-sm" style="width: 28%"><div class="bar" style="--c: {{ artist.color }}"><i style="width: {{ (row.shows / max_shows * 100)|round }}%"></i></div></td>
+        <td class="num">{% for c, v in row.gross.items() %}{{ v|money(c) }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+        <td class="num">{% for c, v in row.commission.items() %}{{ v|money(c) }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-  {% else %}<p class="empty">No confirmed shows this year yet.</p>{% endif %}
+  </div>
+  {% else %}
+    <div style="padding: 0 1.3rem 1.2rem">{{ empty('No confirmed shows this year yet', 'Confirmed and played shows add up here.') }}</div>
+  {% endif %}
 </section>
 {% endblock %}

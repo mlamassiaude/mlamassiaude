@@ -1,13 +1,33 @@
 {% extends "base.html" %}
 {% from "_macros.html" import csrf with context %}
-{% block main_class %}auth{% endblock %}
-{% block content %}
-<form method="post" class="card auth-card">
-  {{ csrf() }}
-  <h1>TourDesk</h1>
-  <p class="muted">Sign in to your agency workspace.</p>
-  <label class="field"><span>Email</span><input type="email" name="email" required autofocus></label>
-  <label class="field"><span>Password</span><input type="password" name="password" required></label>
-  <button class="btn primary block">Sign in</button>
-</form>
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<div class="auth-page">
+  <aside class="auth-side">
+    <a class="wordmark" href="{{ url_for('auth.login') }}"><span class="mark">{{ icon('shows', 17) }}</span><span><strong>TourDesk</strong></span></a>
+    <div class="auth-preview" aria-hidden="true">
+      <ul class="dates">
+        {% for mon, dd, where, who, color, st, label in [('Oct', 27, 'De School · Amsterdam', 'Your artist', '#5b5bd6', 'confirmed', 'Confirmed'), ('Oct', 29, 'La Gaîté Lyrique · Paris', 'Your artist', '#5b5bd6', 'confirmed', 'Confirmed'), ('Nov', 2, 'Village Underground · London', 'Another artist', '#d6455b', 'option', 'Option')] %}
+        <li><div class="date-row">
+          <span class="dateblock"><span class="dd">{{ dd }}</span><span class="mon">{{ mon }}</span></span>
+          <div><div class="line"><span class="where">{{ where }}</span><span class="artist-tag" style="--c: {{ color }}">{{ who }}</span></div></div>
+          <div class="side"><span class="chip s-{{ st }}">{{ label }}</span></div>
+        </div></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p>Your roster, shows, travel, contracts and invoices in one place.</p>
+  </aside>
+  <main class="auth-main">
+    <form method="post" class="auth-card">
+      {% include "_flashes.html" %}
+      {{ csrf() }}
+      <h1>Sign in</h1>
+      <p class="lede">Welcome back. Use the email your agency account was created with.</p>
+      <label class="field"><span>Email</span><input type="email" name="email" value="{{ request.form.email }}" autocomplete="username" required autofocus></label>
+      <label class="field"><span>Password</span><input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn primary block" type="submit">Sign in</button>
+    </form>
+  </main>
+</div>
 {% endblock %}

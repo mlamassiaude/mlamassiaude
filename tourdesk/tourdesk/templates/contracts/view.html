@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, post_button with context %}
+{% from "_macros.html" import status_badge, post_button, artist_tag, show_where with context %}
 {% block title %}Contract {{ contract.number }}{% endblock %}
 {% block content %}
 <div class="page-head no-print">
-  <div>
-    <p class="crumb"><a href="{{ url_for('shows.show', show_id=contract.show.id) }}">{{ contract.show.title }}, {{ contract.show.date|d }}</a></p>
-    <h1>Contract {{ contract.number }} {{ status_badge(contract.status) }}</h1>
+  <div class="title">
+    <p class="crumb">{{ artist_tag(contract.show.artist) }}<a href="{{ url_for('shows.show', show_id=contract.show.id) }}">{{ show_where(contract.show) }}, {{ contract.show.date|d }}</a></p>
+    <h1>{{ contract.number }} {{ status_badge(contract.status) }}</h1>
   </div>
   <div class="actions">
-    {% if contract.status == 'draft' %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Mark as sent', '', None, 'status', 'sent') }}{% endif %}
-    {% if contract.status in ('draft', 'sent') %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Mark as signed', 'primary', None, 'status', 'signed') }}{% endif %}
-    <a class="btn" href="{{ url_for('documents.contract_edit', contract_id=contract.id) }}">Edit text</a>
-    <button class="btn" onclick="window.print()">Print / PDF</button>
-    {% if contract.status != 'signed' %}{{ post_button(url_for('documents.contract_delete', contract_id=contract.id), 'Delete', 'danger', 'Delete this contract?') }}{% else %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Cancel', 'danger', 'Mark this signed contract as cancelled?', 'status', 'cancelled') }}{% endif %}
+    {% if contract.status != 'signed' %}{{ post_button(url_for('documents.contract_delete', contract_id=contract.id), 'Delete', 'danger', 'Delete this contract?', icon_name='trash') }}{% else %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Cancel', 'danger', 'Mark this signed contract as cancelled?', 'status', 'cancelled') }}{% endif %}
+    <a class="btn" href="{{ url_for('documents.contract_edit', contract_id=contract.id) }}">{{ icon('edit', 16) }}Edit text</a>
+    <button class="btn" type="button" onclick="window.print()">{{ icon('print', 16) }}Print / PDF</button>
+    {% if contract.status == 'draft' %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Mark as sent', '', None, 'status', 'sent', icon_name='mail') }}{% endif %}
+    {% if contract.status in ('draft', 'sent') %}{{ post_button(url_for('documents.contract_status', contract_id=contract.id), 'Mark as signed', 'primary', None, 'status', 'signed', icon_name='check') }}{% endif %}
   </div>
 </div>
 <article class="paper">
-  <div class="paper-head">
-    <div><strong>{{ agency.name }}</strong><br><span class="pre">{{ agency.address }}</span></div>
+  <header class="letterhead">
+    <div><span class="org">{{ agency.name }}</span><span class="pre">{{ agency.address }}</span></div>
     <div class="right">{{ agency.email }}<br>{{ agency.phone }}{% if agency.vat_number %}<br>VAT {{ agency.vat_number }}{% endif %}</div>
-  </div>
+  </header>
   <pre class="contract-body">{{ contract.body }}</pre>
 </article>
 {% endblock %}

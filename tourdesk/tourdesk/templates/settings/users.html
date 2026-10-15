@@ -2,28 +2,32 @@
 {% from "_macros.html" import csrf, post_button with context %}
 {% block title %}Team{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Team members</h1><div class="actions"><a class="btn" href="{{ url_for('core.settings') }}">Agency settings</a></div></div>
+<div class="page-head">
+  <div class="title"><p class="crumb"><a href="{{ url_for('core.settings') }}">Settings</a></p><h1>Team members</h1></div>
+</div>
 <div class="columns">
-  <section class="card">
-    <table>
+  <section class="panel flush">
+    <div class="table-scroll">
+    <table class="stack">
       <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
       <tbody>
       {% for u in users %}
-        <tr><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ 'Admin' if u.is_admin else 'Agent' }}</td>
-          <td>{% if u.id != current_user.id %}{{ post_button(url_for('core.delete_user', user_id=u.id), 'Remove', 'small link', 'Remove this team member?') }}{% endif %}</td></tr>
+        <tr><td><strong>{{ u.name }}</strong>{% if u.id == current_user.id %} <span class="muted">(you)</span>{% endif %}</td><td>{{ u.email }}</td><td>{{ 'Admin' if u.is_admin else 'Agent' }}</td>
+          <td class="num">{% if u.id != current_user.id %}{{ post_button(url_for('core.delete_user', user_id=u.id), 'Remove', 'link danger small', 'Remove this team member?') }}{% endif %}</td></tr>
       {% endfor %}
       </tbody>
     </table>
+    </div>
   </section>
-  <aside class="card">
-    <h2>Add a team member</h2>
+  <aside class="panel">
+    <div class="panel-head"><h2>Add a team member</h2></div>
     <form method="post" class="form compact">
       {{ csrf() }}
-      <label class="field"><span>Name</span><input name="name" required></label>
-      <label class="field"><span>Email</span><input type="email" name="email" required></label>
-      <label class="field"><span>Temporary password</span><input type="password" name="password" minlength="8" required></label>
+      <label class="field"><span>Name</span><input name="name" autocomplete="off" required></label>
+      <label class="field"><span>Email</span><input type="email" name="email" autocomplete="off" required></label>
+      <label class="field"><span>Temporary password</span><input type="password" name="password" minlength="8" autocomplete="new-password" required><small>At least 8 characters. Share it with them privately.</small></label>
       <label class="field checkbox"><input type="checkbox" name="is_admin"><span>Admin (can change settings and team)</span></label>
-      <button class="btn primary">Add</button>
+      <button class="btn primary" type="submit">{{ icon('plus', 16) }}Add member</button>
     </form>
   </aside>
 </div>

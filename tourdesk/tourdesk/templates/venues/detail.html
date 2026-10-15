@@ -1,34 +1,30 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, post_button, artist_dot with context %}
+{% from "_macros.html" import post_button, tour_dates, empty with context %}
 {% block title %}{{ venue.name }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>{{ venue.name }}</h1>
+  <div class="title"><p class="crumb"><a href="{{ url_for('roster.venues') }}">Venues</a></p><h1>{{ venue.name }}</h1>
+    <p class="crumb muted">{{ ', '.join([venue.city, venue.country]|select) }}{% if venue.capacity %} · capacity {{ venue.capacity }}{% endif %}</p></div>
   <div class="actions">
-    <a class="btn" href="{{ url_for('roster.venue_edit', venue_id=venue.id) }}">Edit</a>
-    {% if not venue.shows %}{{ post_button(url_for('roster.venue_delete', venue_id=venue.id), 'Delete', 'danger', 'Delete this venue?') }}{% endif %}
+    {% if not venue.shows %}{{ post_button(url_for('roster.venue_delete', venue_id=venue.id), 'Delete', 'danger', 'Delete this venue?', icon_name='trash') }}{% endif %}
+    <a class="btn primary" href="{{ url_for('roster.venue_edit', venue_id=venue.id) }}">{{ icon('edit', 16) }}Edit</a>
   </div>
 </div>
 <div class="columns">
-  <section class="card">
-    <h2>Shows here</h2>
-    {% if shows %}
-    <table><tbody>
-      {% for s in shows %}<tr><td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d }}</a></td><td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td><td>{{ status_badge(s.status) }}</td><td class="num">{{ s.fee|money(s.currency) }}</td></tr>{% endfor %}
-    </tbody></table>
-    {% else %}<p class="empty">No shows booked at this venue yet.</p>{% endif %}
+  <section class="panel" aria-labelledby="h-shows">
+    <div class="panel-head"><h2 id="h-shows">Shows here</h2><span class="meta">{{ shows|length }}</span></div>
+    {% if shows %}{{ tour_dates(shows) }}{% else %}{{ empty('No shows booked at this venue yet') }}{% endif %}
   </section>
-  <aside class="card">
+  <aside class="panel" aria-labelledby="h-details">
+    <div class="panel-head"><h2 id="h-details">Details</h2></div>
     <dl class="facts">
       <dt>Address</dt><dd>{{ venue.address or '–' }}</dd>
-      <dt>City</dt><dd>{{ venue.city }} {{ venue.country }}</dd>
-      <dt>Capacity</dt><dd>{{ venue.capacity or '–' }}</dd>
       <dt>Contact</dt><dd>{{ venue.contact_name or '–' }}</dd>
-      <dt>Email</dt><dd>{{ venue.email or '–' }}</dd>
+      <dt>Email</dt><dd>{% if venue.email %}<a href="mailto:{{ venue.email }}">{{ venue.email }}</a>{% else %}–{% endif %}</dd>
       <dt>Phone</dt><dd>{{ venue.phone or '–' }}</dd>
       {% if venue.website|safe_url %}<dt>Website</dt><dd><a href="{{ venue.website|safe_url }}" target="_blank" rel="noopener">{{ venue.website }}</a></dd>{% endif %}
     </dl>
-    {% if venue.notes %}<p class="pre">{{ venue.notes }}</p>{% endif %}
+    {% if venue.notes %}<h3>Notes</h3><p class="pre" style="margin: 0">{{ venue.notes }}</p>{% endif %}
   </aside>
 </div>
 {% endblock %}

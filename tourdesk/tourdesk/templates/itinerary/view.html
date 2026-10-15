@@ -1,41 +1,51 @@
 {% extends "base.html" %}
-{% from "_macros.html" import post_button, status_badge with context %}
+{% from "_macros.html" import post_button, status_badge, artist_tag, dateblock with context %}
 {% block title %}{{ itinerary.title }}{% endblock %}
 {% block content %}
 {% if not shared %}
 <div class="page-head no-print">
-  <div>
-    <p class="crumb"><a href="{{ url_for('roster.artist', artist_id=itinerary.artist_id) }}">{{ itinerary.artist.name }}</a></p>
+  <div class="title">
+    <p class="crumb">{{ artist_tag(itinerary.artist) }}</p>
     <h1>{{ itinerary.title }}</h1>
   </div>
   <div class="actions">
-    {% if not day_sheet %}<a class="btn" href="{{ url_for('itinerary.itinerary_edit', itinerary_id=itinerary.id) }}">Edit</a>{% endif %}
-    <button class="btn" onclick="window.print()">Print / PDF</button>
-    {% if not day_sheet %}{{ post_button(url_for('itinerary.itinerary_delete', itinerary_id=itinerary.id), 'Delete', 'danger', 'Delete this itinerary?') }}{% endif %}
+    {% if not day_sheet %}
+      {{ post_button(url_for('itinerary.itinerary_delete', itinerary_id=itinerary.id), 'Delete', 'danger', 'Delete this itinerary?', icon_name='trash') }}
+      <a class="btn" href="{{ url_for('itinerary.itinerary_edit', itinerary_id=itinerary.id) }}">{{ icon('edit', 16) }}Edit</a>
+    {% endif %}
+    <button class="btn primary" type="button" onclick="window.print()">{{ icon('print', 16) }}Print / PDF</button>
   </div>
 </div>
 {% if not day_sheet %}
-<div class="card share no-print">
+<section class="panel share no-print" aria-label="Sharing">
+  <span class="q-icon">{{ icon('share', 18) }}</span>
   {% if itinerary.share_enabled %}
     {% set link = url_for('itinerary.shared', token=itinerary.share_token, _external=True) %}
-    <p><strong>Share link</strong> (read only, no fees shown): <input readonly value="{{ link }}" onclick="this.select()"></p>
-    <div class="share-links"><a href="{{ url_for('itinerary.shared_ics', token=itinerary.share_token) }}">Calendar file (.ics)</a> · {{ post_button(url_for('itinerary.itinerary_rotate', itinerary_id=itinerary.id), 'Reset link', 'link', 'The current link will stop working. Continue?') }}</div>
+    <div>
+      <p><strong>Share link is on.</strong> Anyone with the link can read this itinerary. Fees and internal notes are never shown.</p>
+      <div class="share-links">
+        <a href="{{ url_for('itinerary.shared_ics', token=itinerary.share_token) }}">{{ icon('download', 14) }} Calendar file (.ics)</a>
+        {{ post_button(url_for('itinerary.itinerary_rotate', itinerary_id=itinerary.id), 'Reset link', 'link small', 'The current link will stop working. Continue?') }}
+      </div>
+    </div>
+    <label class="sr-only" for="share-url">Share link</label>
+    <input id="share-url" readonly value="{{ link }}" onclick="this.select()" style="min-width: 0; width: min(420px, 100%)">
   {% else %}
-    <p class="muted">Sharing is off. Edit the itinerary and tick "Enable public share link" to send it to the travel party.</p>
+    <p>Sharing is off. Edit the itinerary and tick “Enable public share link” to send it to the travel party.</p>
   {% endif %}
-</div>
+</section>
 {% endif %}
 {% endif %}
 
 <article class="paper itinerary">
-  <header class="paper-head">
+  <header class="letterhead">
     <div>
-      <h2 class="doc-title">{{ itinerary.title }}</h2>
-      <strong>{{ itinerary.artist.name }}</strong><br>
+      <span class="org">{{ itinerary.artist.name }}</span>
+      {{ itinerary.title }}<br>
       {{ itinerary.start_date|d('%d %b %Y') }}{% if itinerary.end_date != itinerary.start_date %} to {{ itinerary.end_date|d('%d %b %Y') }}{% endif %}
     </div>
     <div class="right">
-      <strong>{{ agency_info.name }}</strong><br>{{ agency_info.email }}<br>{{ agency_info.phone }}
+      <strong style="color: var(--ink)">{{ agency_info.name }}</strong><br>{{ agency_info.email }}<br>{{ agency_info.phone }}
     </div>
   </header>
 
@@ -43,66 +53,76 @@
 
   {% if itinerary.artist.members %}
   <section class="party">
-    <h3>Travel party</h3>
-    <ul>{% for m in itinerary.artist.members %}<li><strong>{{ m.name }}</strong> {{ m.role }} <small>{{ m.phone }}</small></li>{% endfor %}</ul>
+    <h2 class="party-title">Travel party</h2>
+    <ul>{% for m in itinerary.artist.members %}<li><strong>{{ m.name }}</strong> <span>{{ m.role }}</span>{% if m.phone %}<br><small>{{ m.phone }}</small>{% endif %}</li>{% endfor %}</ul>
   </section>
   {% endif %}
 
   {% for day in days %}
     {% if not (day.is_empty and not day_sheet and loop.length > 45) %}
-    <section class="it-day {{ 'off' if day.is_empty }}">
-      <h3>{{ day.day|d('%A %d %B') }} <span class="kind">{{ day.kind }}</span></h3>
-      {% for item in day.travel %}
-        <div class="it-row">
-          <span class="time">{{ item.start_at|d('%H:%M') }}</span>
-          <div>
-            <strong>{{ item.kind|capitalize }}: {{ item.label }}</strong>{% if item.status == 'to_book' %} {{ status_badge('to_book', 'Not booked yet') }}{% endif %}
-            <br><small>
-              {% if item.provider %}{{ item.provider }} · {% endif %}
-              {% if item.from_place %}{{ item.from_place }} {{ item.start_at|d('%H:%M') }}{% endif %}{% if item.end_at %} → {{ item.to_place }} {{ item.end_at|d('%H:%M') }}{% endif %}
-              {% if item.reference %} · Ref {{ item.reference }}{% endif %}
-              {% if item.travellers %}<br>{{ item.travellers }}{% endif %}
-            </small>
-            {% if item.notes %}<p class="pre small">{{ item.notes }}</p>{% endif %}
+    <section class="it-day {{ 'off' if day.is_empty }} {{ 'show-day' if day.shows }}">
+      {{ dateblock(day.day) }}
+      <div>
+        <div class="dayhead"><h2>{{ day.day|d('%A %d %B') }}</h2><span class="kind-label">{{ day.kind }}</span></div>
+        {% for item in day.travel %}
+          <div class="it-row">
+            {{ icon(item.kind if item.kind in ('flight','train','car','ground') else 'other', 18) }}
+            <span class="time">{{ item.start_at|d('%H:%M') }}</span>
+            <div>
+              <strong>{{ item.label }}</strong>{% if item.status == 'to_book' %} {{ status_badge('to_book', 'Not booked yet') }}{% endif %}
+              <br><small>
+                {% if item.provider %}{{ item.provider }} · {% endif %}
+                {% if item.from_place %}{{ item.from_place }} {{ item.start_at|d('%H:%M') }}{% endif %}{% if item.end_at %} → {{ item.to_place }} {{ item.end_at|d('%H:%M') }}{% endif %}
+                {% if item.reference %} · Ref {{ item.reference }}{% endif %}
+                {% if item.travellers %}<br>{{ item.travellers }}{% endif %}
+              </small>
+              {% if item.notes %}<p class="pre small" style="margin: 0.3rem 0 0">{{ item.notes }}</p>{% endif %}
+            </div>
           </div>
-        </div>
-      {% endfor %}
-      {% for show in day.shows %}
-        <div class="it-row show">
-          <span class="time">{{ show.set_time or 'Show' }}</span>
-          <div>
-            <strong>{{ show.event_name or (show.venue.name if show.venue else 'Show') }}</strong>{% if show.status != 'confirmed' and show.status != 'played' %} {{ status_badge(show.status) }}{% endif %}
-            <br><small>{% if show.venue %}{{ show.venue.name }}, {{ show.venue.address }} {% endif %}{{ show.display_city }}</small>
-            <table class="schedule">
-              {% for label, value in [('Load in', show.load_in), ('Soundcheck', show.soundcheck), ('Doors', show.doors_time), ('Set', show.set_time), ('Curfew', show.curfew)] if value %}
-                <tr><td>{{ value }}</td><td>{{ label }}{% if label == 'Set' and show.set_length %} ({{ show.set_length }} min){% endif %}</td></tr>
-              {% endfor %}
-            </table>
-            {% if show.promoter %}<small>Promoter: {{ show.promoter.company }}{% if show.promoter.contact_name %}, {{ show.promoter.contact_name }}{% endif %} {{ show.promoter.phone }}</small><br>{% endif %}
-            {% if show.venue and (show.venue.contact_name or show.venue.phone) %}<small>Venue contact: {{ show.venue.contact_name }} {{ show.venue.phone }}</small>{% endif %}
-            {% if show.production_notes %}<p class="pre small">{{ show.production_notes }}</p>{% endif %}
+        {% endfor %}
+        {% for show in day.shows %}
+          <div class="it-show">
+            <div class="it-row">
+              {{ icon('shows', 18) }}
+              <span class="time">{{ show.set_time or 'Show' }}</span>
+              <div>
+                <strong>{{ show.event_name or (show.venue.name if show.venue else 'Show') }}</strong>{% if show.status not in ('confirmed', 'played') %} {{ status_badge(show.status) }}{% endif %}
+                <br><small>{% if show.venue %}{{ show.venue.name }}, {{ show.venue.address }} {% endif %}{{ show.display_city }}</small>
+                <table class="schedule">
+                  <tbody>
+                  {% for label, value in [('Load in', show.load_in), ('Soundcheck', show.soundcheck), ('Doors', show.doors_time), ('Set', show.set_time), ('Curfew', show.curfew)] if value %}
+                    <tr><td>{{ value }}</td><td>{{ label }}{% if label == 'Set' and show.set_length %} ({{ show.set_length }} min){% endif %}</td></tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+                {% if show.promoter %}<small>Promoter: {{ show.promoter.company }}{% if show.promoter.contact_name %}, {{ show.promoter.contact_name }}{% endif %} {{ show.promoter.phone }}</small><br>{% endif %}
+                {% if show.venue and (show.venue.contact_name or show.venue.phone) %}<small>Venue contact: {{ show.venue.contact_name }} {{ show.venue.phone }}</small>{% endif %}
+                {% if show.production_notes %}<p class="pre small" style="margin: 0.5rem 0 0">{{ show.production_notes }}</p>{% endif %}
+              </div>
+            </div>
           </div>
-        </div>
-      {% endfor %}
-      {% for item in day.other %}
-        <div class="it-row"><span class="time">{{ item.start_at|d('%H:%M') }}</span><div><strong>{{ item.label }}</strong>{% if item.address %}<br><small>{{ item.address }}</small>{% endif %}{% if item.notes %}<p class="pre small">{{ item.notes }}</p>{% endif %}</div></div>
-      {% endfor %}
-      {% for item in day.hotels_checkin %}
-        <div class="it-row hotel">
-          <span class="time">{{ item.start_at|d('%H:%M') }}</span>
-          <div>
-            <strong>Hotel: {{ item.provider or item.label }}</strong>{% if item.status == 'to_book' %} {{ status_badge('to_book', 'Not booked yet') }}{% endif %}
-            <br><small>{{ item.address }}{% if item.end_at %} · Check out {{ item.end_at|d('%a %d %b %H:%M') }}{% endif %}{% if item.reference %} · Ref {{ item.reference }}{% endif %}</small>
+        {% endfor %}
+        {% for item in day.other %}
+          <div class="it-row">{{ icon('other', 18) }}<span class="time">{{ item.start_at|d('%H:%M') }}</span><div><strong>{{ item.label }}</strong>{% if item.address %}<br><small>{{ item.address }}</small>{% endif %}{% if item.notes %}<p class="pre small" style="margin: 0.3rem 0 0">{{ item.notes }}</p>{% endif %}</div></div>
+        {% endfor %}
+        {% for item in day.hotels_checkin %}
+          <div class="it-row">
+            {{ icon('hotel', 18) }}
+            <span class="time">{{ item.start_at|d('%H:%M') }}</span>
+            <div>
+              <strong>{{ item.provider or item.label }}</strong>{% if item.status == 'to_book' %} {{ status_badge('to_book', 'Not booked yet') }}{% endif %}
+              <br><small>Check in{% if item.address %} · {{ item.address }}{% endif %}{% if item.end_at %} · Check out {{ item.end_at|d('%a %d %b %H:%M') }}{% endif %}{% if item.reference %} · Ref {{ item.reference }}{% endif %}</small>
+            </div>
           </div>
-        </div>
-      {% endfor %}
-      {% for item in day.hotels_staying %}
-        <div class="it-row hotel muted"><span class="time"></span><div>Staying at {{ item.provider or item.label }}</div></div>
-      {% endfor %}
-      {% if day.is_empty %}<p class="muted small">Nothing scheduled.</p>{% endif %}
+        {% endfor %}
+        {% for item in day.hotels_staying %}
+          <div class="it-row muted">{{ icon('hotel', 18) }}<span class="time"></span><div><small>Staying at {{ item.provider or item.label }}</small></div></div>
+        {% endfor %}
+        {% if day.is_empty %}<p class="muted small" style="margin: 0">Nothing scheduled.</p>{% endif %}
+      </div>
     </section>
     {% endif %}
   {% endfor %}
-  <footer class="muted small">Generated {{ today|d }} by {{ agency_info.name }}. Times are local.</footer>
+  <footer class="muted small">Generated {{ today|d }} by {{ agency_info.name }}. All times are local.</footer>
 </article>
 {% endblock %}

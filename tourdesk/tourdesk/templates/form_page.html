@@ -1,20 +1,24 @@
 {% extends "base.html" %}
 {% from "_macros.html" import render_field, csrf with context %}
 {% block content %}
-<div class="page-head"><h1>{{ title }}</h1></div>
-<form method="post" class="card form">
+<div class="page-head"><div class="title"><h1>{{ title }}</h1></div></div>
+<form method="post" class="form">
   {{ csrf() }}
   {% if sections %}
     {% for heading, section_fields in sections %}
-      <h2>{{ heading }}</h2>
-      <div class="grid">{% for f in section_fields %}{{ render_field(f, obj) }}{% endfor %}</div>
+      <section class="panel form-section">
+        <h2>{{ heading }}</h2>
+        <div class="grid">{% for f in section_fields %}{{ render_field(f, obj) }}{% endfor %}</div>
+      </section>
     {% endfor %}
   {% else %}
-    <div class="grid">{% for f in fields %}{{ render_field(f, obj) }}{% endfor %}</div>
+    <section class="panel form-section">
+      <div class="grid">{% for f in fields %}{{ render_field(f, obj) }}{% endfor %}</div>
+    </section>
   {% endif %}
-  <div class="actions">
-    <button class="btn primary">Save</button>
-    <a class="btn" href="{{ cancel_url }}">Cancel</a>
+  <div class="savebar">
+    <a class="btn ghost" href="{{ cancel_url }}">Cancel</a>
+    <button class="btn primary" type="submit">{{ icon('check', 16) }}Save</button>
   </div>
 </form>
 {% endblock %}

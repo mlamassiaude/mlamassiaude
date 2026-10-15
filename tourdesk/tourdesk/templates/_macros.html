@@ -12,7 +12,7 @@
       <input type="checkbox" name="{{ f.name }}" {{ 'checked' if checked }}>
       <span>{{ f.label }}</span>
     {% else %}
-      <span>{{ f.label }}{% if f.required %} <em>*</em>{% endif %}</span>
+      <span>{{ f.label }}{% if f.required %} <em aria-hidden="true">*</em>{% endif %}</span>
       {% if f.type == 'textarea' %}
         <textarea name="{{ f.name }}" rows="{{ f.extra.get('rows', 4) }}" {{ 'required' if f.required }} placeholder="{{ f.placeholder }}">{{ value }}</textarea>
       {% elif f.type in ('select', 'select_int') %}
@@ -25,7 +25,7 @@
       {% else %}
         {% set input_type = {'money': 'number', 'percent': 'number', 'datetime': 'datetime-local'}.get(f.type, f.type) %}
         <input type="{{ input_type }}" name="{{ f.name }}" value="{{ value }}" placeholder="{{ f.placeholder }}"
-          {% if f.type == 'money' %}step="0.01" min="0"{% elif f.type == 'percent' %}step="0.01" min="0" max="100"{% endif %}
+          {% if f.type == 'money' %}step="0.01" min="0" inputmode="decimal"{% elif f.type == 'percent' %}step="0.01" min="0" max="100" inputmode="decimal"{% endif %}
           {{ 'required' if f.required }}>
       {% endif %}
     {% endif %}
@@ -33,18 +33,77 @@
   </label>
 {% endmacro %}
 
-{% macro status_badge(status, label=None) %}<span class="badge s-{{ status }}">{{ label or status|replace('_', ' ')|capitalize }}</span>{% endmacro %}
+{% set STATUS_LABELS = {'to_book': 'To book', 'option': 'Option', 'pending': 'Pending', 'confirmed': 'Confirmed', 'played': 'Played', 'cancelled': 'Cancelled', 'draft': 'Draft', 'sent': 'Sent', 'signed': 'Signed', 'paid': 'Paid', 'overdue': 'Overdue', 'booked': 'Booked'} %}
+{% macro status_badge(status, label=None) %}<span class="chip s-{{ status }}">{{ label or STATUS_LABELS.get(status, status|capitalize) }}</span>{% endmacro %}
 
-{% macro artist_dot(artist) %}<span class="dot" style="background: {{ artist.color or '#888' }}"></span>{% endmacro %}
+{# An artist: their colour as a dot, then their name. #}
+{% macro artist_tag(artist, link=True) -%}
+  {%- if link -%}<a class="artist-tag" href="{{ url_for('roster.artist', artist_id=artist.id) }}" style="--c: {{ artist.color }}">{{ artist.name }}</a>
+  {%- else -%}<span class="artist-tag" style="--c: {{ artist.color }}">{{ artist.name }}</span>{%- endif -%}
+{%- endmacro %}
 
-{% macro post_button(action, label, cls='', confirm=None, name=None, value=None) %}
+{% macro avatar(artist, size='') -%}
+  <span class="avatar {{ size }}" style="--c: {{ artist.color|fill }}; --ink-on: {{ artist.color|ink }}" aria-hidden="true">{{ artist.name[:1]|upper }}</span>
+{%- endmacro %}
+
+{% macro dateblock(d, size='', past=False) -%}
+  <span class="dateblock {{ size }} {{ 'past' if past }}" aria-label="{{ d.strftime('%A %d %B %Y') }}"><span class="dow">{{ d.strftime('%a') }}</span><span class="dd">{{ d.day }}</span><span class="mon">{{ d.strftime('%b') }}</span></span>
+{%- endmacro %}
+
+{% set KIND_ICONS = {'flight': 'flight', 'train': 'train', 'car': 'car', 'ground': 'ground', 'hotel': 'hotel', 'other': 'other'} %}
+{% set KIND_LABELS = {'flight': 'Flight', 'train': 'Train', 'car': 'Car / van', 'ground': 'Transfer', 'hotel': 'Hotel', 'other': 'Other'} %}
+{% macro kind(k) %}<span class="kind">{{ icon(KIND_ICONS.get(k, 'other'), 16) }}{{ KIND_LABELS.get(k, k|capitalize) }}</span>{% endmacro %}
+
+{% macro post_button(action, label, cls='', confirm=None, name=None, value=None, icon_name=None) %}
 <form method="post" action="{{ action }}" class="inline" {% if confirm %}onsubmit="return confirm('{{ confirm }}')"{% endif %}>
   {{ csrf() }}
   {% if name %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}
-  <button class="btn {{ cls }}">{{ label }}</button>
+  <button class="btn {{ cls }}" type="submit">{% if icon_name %}{{ icon(icon_name, 16) }}{% endif %}{{ label }}</button>
 </form>
 {% endmacro %}
 
 {% macro show_place(show) -%}
   {{ show.event_name or (show.venue.name if show.venue else '') }}{% if show.display_city %}{{ ', ' if (show.event_name or show.venue) }}{{ show.display_city }}{% endif %}{% if show.display_country %} ({{ show.display_country }}){% endif %}
 {%- endmacro %}
+
+{% macro show_where(show) -%}
+  {{ show.event_name or (show.venue.name if show.venue else 'Venue TBC') }}{% if show.display_city %} · {{ show.display_city }}{% endif %}
+{%- endmacro %}
+
+{% macro empty(title, text='', icon_name='calendar') %}
+<div class="empty">{{ icon(icon_name, 20) }}<div><strong>{{ title }}</strong>{% if text %}<span>{{ text }}</span>{% endif %}</div></div>
+{% endmacro %}
+
+{# One show as a row: date, where, who, status, fee. #}
+{% macro date_row(s, show_artist=True, show_fee=True) %}
+<a class="date-row" href="{{ url_for('shows.show', show_id=s.id) }}">
+  {{ dateblock(s.date, past=(s.date < today)) }}
+  <div>
+    <div class="line"><span class="where">{{ show_where(s) }}</span>{% if show_artist %}{{ artist_tag(s.artist, link=False) }}{% endif %}</div>
+    <div class="meta">
+      {% if s.display_country %}<span>{{ icon('other', 14) }}{{ s.display_country }}</span>{% endif %}
+      {% if s.set_time %}<span>{{ icon('clock', 14) }}Set {{ s.set_time }}</span>{% endif %}
+      {% if s.promoter %}<span>{{ icon('promoter', 14) }}{{ s.promoter.company }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="side">
+    {{ status_badge(s.status) }}
+    {% if show_fee %}<span class="fee">{{ s.fee|money(s.currency) }}</span>{% endif %}
+  </div>
+</a>
+{% endmacro %}
+
+{# Shows grouped by month. #}
+{% macro tour_dates(shows, show_artist=True, show_fee=True) %}
+<ul class="dates">
+  {% set ns = namespace(current=None) %}
+  {% for s in shows %}
+    {% set key = s.date.strftime('%Y-%m') %}
+    {% if key != ns.current %}
+      {% set ns.current = key %}
+      <li class="month">{{ s.date.strftime('%B %Y') }}</li>
+    {% endif %}
+    <li>{{ date_row(s, show_artist, show_fee) }}</li>
+  {% endfor %}
+</ul>
+{% endmacro %}

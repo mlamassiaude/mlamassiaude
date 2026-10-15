@@ -1,128 +1,114 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, render_field, csrf, post_button, show_place with context %}
+{% from "_macros.html" import status_badge, render_field, csrf, post_button, tour_dates, empty, kind, avatar with context %}
 {% block title %}{{ artist.name }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1><span class="dot big" style="background: {{ artist.color }}"></span>{{ artist.name }} {% if not artist.active %}<span class="badge">Inactive</span>{% endif %}</h1>
+  <div class="artist-hero">
+    {{ avatar(artist, 'lg') }}
+    <div class="title">
+      <h1>{{ artist.name }}{% if not artist.active %} <span class="chip">Inactive</span>{% endif %}</h1>
+      <p class="crumb muted">{{ artist.genre or 'Genre not set' }}{% if artist.home_city or artist.country %} · {{ ', '.join([artist.home_city, artist.country]|select) }}{% endif %} · Agent: {{ artist.agent.name if artist.agent else 'unassigned' }}</p>
+    </div>
+  </div>
   <div class="actions">
-    <a class="btn" href="{{ url_for('roster.artist_edit', artist_id=artist.id) }}">Edit</a>
-    <a class="btn" href="{{ url_for('itinerary.itinerary_edit', artist=artist.id) }}">New itinerary</a>
-    <a class="btn" href="{{ url_for('shows.logistics_new', artist=artist.id) }}">Add travel / hotel</a>
-    <a class="btn primary" href="{{ url_for('shows.show_new', artist=artist.id) }}">New show</a>
+    <a class="btn" href="{{ url_for('roster.artist_edit', artist_id=artist.id) }}">{{ icon('edit', 16) }}Edit</a>
+    <a class="btn" href="{{ url_for('itinerary.itinerary_edit', artist=artist.id) }}">{{ icon('itinerary', 16) }}New itinerary</a>
+    <a class="btn" href="{{ url_for('shows.logistics_new', artist=artist.id) }}">{{ icon('flight', 16) }}Add travel</a>
+    <a class="btn primary" href="{{ url_for('shows.show_new', artist=artist.id) }}">{{ icon('calendar-plus', 16) }}New show</a>
   </div>
 </div>
 
 <div class="columns">
   <div>
-    <section class="card">
-      <h2>Upcoming shows</h2>
-      {% if upcoming %}
-      <table>
-        <thead><tr><th>Date</th><th>Where</th><th>Status</th><th class="num">Fee</th><th>Contract</th></tr></thead>
-        <tbody>
-        {% for s in upcoming %}
-          <tr>
-            <td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d('%a %d %b %Y') }}</a></td>
-            <td>{{ show_place(s) }}</td>
-            <td>{{ status_badge(s.status) }}</td>
-            <td class="num">{{ s.fee|money(s.currency) }}</td>
-            <td>{% set c = s.contracts|rejectattr('status', 'equalto', 'cancelled')|list|last %}{% if c %}{{ status_badge(c.status) }}{% else %}<span class="muted">None</span>{% endif %}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      {% else %}<p class="empty">No upcoming shows.</p>{% endif %}
+    <section class="panel" aria-labelledby="upcoming">
+      <div class="panel-head"><h2 id="upcoming">Upcoming shows</h2><span class="meta">{{ upcoming|length }}</span></div>
+      {% if upcoming %}{{ tour_dates(upcoming, show_artist=False) }}
+      {% else %}{{ empty('No upcoming shows', 'Use New show to pencil in an option.') }}{% endif %}
     </section>
 
-    <section class="card" id="logistics">
-      <h2>Upcoming travel and hotels</h2>
+    <section class="panel flush" id="logistics" aria-labelledby="travel">
+      <div class="panel-head"><h2 id="travel">Upcoming travel and hotels</h2>
+        <a class="btn small" href="{{ url_for('shows.logistics_new', artist=artist.id) }}">{{ icon('plus', 14) }}Add</a></div>
       {% if logistics %}
-      <table>
+      <div class="table-scroll">
+      <table class="stack">
         <thead><tr><th>When</th><th>Type</th><th>Details</th><th>Status</th><th></th></tr></thead>
         <tbody>
         {% for item in logistics %}
           <tr>
-            <td class="nowrap">{{ item.start_at|d('%d %b %H:%M') }}</td>
-            <td>{{ item.kind|capitalize }}</td>
-            <td>{{ item.label }}{% if item.reference %} <small class="muted">Ref {{ item.reference }}</small>{% endif %}</td>
+            <td class="nowrap">{{ item.start_at|d('%a %d %b') }}<span class="sub">{{ item.start_at|d('%H:%M') }}</span></td>
+            <td>{{ kind(item.kind) }}</td>
+            <td>{{ item.label }}{% if item.reference %}<span class="sub">Ref {{ item.reference }}</span>{% endif %}</td>
             <td>{{ status_badge(item.status) }}</td>
-            <td><a href="{{ url_for('shows.logistics_edit', item_id=item.id) }}">Edit</a></td>
+            <td class="num"><a href="{{ url_for('shows.logistics_edit', item_id=item.id) }}">Edit</a></td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
-      {% else %}<p class="empty">Nothing booked yet.</p>{% endif %}
+      </div>
+      {% else %}<div style="padding: 0 1.3rem 1.2rem">{{ empty('Nothing booked yet', 'Flights, trains and hotels you add show up here and on itineraries.', 'flight') }}</div>{% endif %}
     </section>
 
     {% if past %}
-    <section class="card">
-      <h2>Recent shows</h2>
-      <table>
-        <tbody>
-        {% for s in past %}
-          <tr><td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d }}</a></td><td>{{ show_place(s) }}</td><td>{{ status_badge(s.status) }}</td><td class="num">{{ s.fee|money(s.currency) }}</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+    <section class="panel" aria-labelledby="recent">
+      <div class="panel-head"><h2 id="recent">Recent shows</h2></div>
+      {{ tour_dates(past, show_artist=False) }}
     </section>
     {% endif %}
   </div>
 
   <aside>
-    <section class="card">
-      <h2>Profile</h2>
+    <section class="panel" aria-labelledby="profile">
+      <div class="panel-head"><h2 id="profile">Profile</h2></div>
       <dl class="facts">
-        <dt>Genre</dt><dd>{{ artist.genre or '–' }}</dd>
-        <dt>Based in</dt><dd>{{ ', '.join([artist.home_city, artist.country]|select) or '–' }}</dd>
-        <dt>Agent</dt><dd>{{ artist.agent.name if artist.agent else 'Unassigned' }}</dd>
-        <dt>Default fee</dt><dd>{{ artist.default_fee|money(artist.currency) }}</dd>
+        <dt>Fee from</dt><dd>{{ artist.default_fee|money(artist.currency) }}</dd>
         <dt>Commission</dt><dd>{{ artist.commission_rate|pct }}</dd>
-        <dt>Email</dt><dd>{{ artist.email or '–' }}</dd>
+        <dt>Email</dt><dd>{% if artist.email %}<a href="mailto:{{ artist.email }}">{{ artist.email }}</a>{% else %}–{% endif %}</dd>
         <dt>Phone</dt><dd>{{ artist.phone or '–' }}</dd>
         {% if artist.website %}<dt>Website</dt><dd>{% if artist.website|safe_url %}<a href="{{ artist.website|safe_url }}" rel="noopener" target="_blank">{{ artist.website }}</a>{% else %}{{ artist.website }}{% endif %}</dd>{% endif %}
+        <dt>Billing</dt><dd>{{ artist.billing_name or artist.name }}</dd>
       </dl>
-      {% if artist.bio %}<p class="pre">{{ artist.bio }}</p>{% endif %}
+      {% if artist.bio %}<p class="pre" style="margin-top: 1rem">{{ artist.bio }}</p>{% endif %}
     </section>
 
-    <section class="card" id="party">
-      <h2>Travel party</h2>
+    <section class="panel" id="party" aria-labelledby="party-h">
+      <div class="panel-head"><h2 id="party-h">Travel party</h2><span class="meta">{{ artist.members|length }}</span></div>
       <ul class="people">
         {% for m in artist.members %}
           <li>
-            <strong>{{ m.name }}</strong> <span class="muted">{{ m.role }}</span><br>
-            <small>{{ m.email }} {{ m.phone }}</small>
-            {{ post_button(url_for('roster.member_delete', member_id=m.id), 'Remove', 'small link', 'Remove this person?') }}
+            <div class="who"><strong>{{ m.name }}</strong><span>{{ m.role }}{% if m.phone %} · {{ m.phone }}{% endif %}</span></div>
+            {{ post_button(url_for('roster.member_delete', member_id=m.id), 'Remove', 'link danger small', 'Remove this person from the travel party?') }}
           </li>
         {% else %}<li class="muted">No one added yet.</li>{% endfor %}
       </ul>
       <details>
-        <summary>Add a person</summary>
+        <summary>{{ icon('plus', 16) }}Add a person</summary>
         <form method="post" action="{{ url_for('roster.member_add', artist_id=artist.id) }}" class="form compact">
           {{ csrf() }}
           {% for f in member_fields %}{{ render_field(f, None) }}{% endfor %}
-          <button class="btn primary">Add</button>
+          <button class="btn primary" type="submit">Add to party</button>
         </form>
       </details>
     </section>
 
     {% if artist.tech_rider or artist.hospitality_rider %}
-    <section class="card">
-      <h2>Riders</h2>
+    <section class="panel" aria-labelledby="riders">
+      <div class="panel-head"><h2 id="riders">Riders</h2></div>
       {% if artist.tech_rider %}<h3>Technical</h3><p class="pre">{{ artist.tech_rider }}</p>{% endif %}
       {% if artist.hospitality_rider %}<h3>Hospitality</h3><p class="pre">{{ artist.hospitality_rider }}</p>{% endif %}
     </section>
     {% endif %}
 
-    <section class="card">
-      <h2>Itineraries</h2>
+    <section class="panel" aria-labelledby="its">
+      <div class="panel-head"><h2 id="its">Itineraries</h2></div>
       <ul class="plain">
-        {% for it in itineraries %}<li><a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}">{{ it.title }}</a> <small class="muted">{{ it.start_date|d('%d %b') }} to {{ it.end_date|d }}</small></li>
+        {% for it in itineraries %}<li>{{ icon('itinerary', 16) }}<a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}">{{ it.title }}</a> <small class="muted">{{ it.start_date|d('%d %b') }} to {{ it.end_date|d }}</small></li>
         {% else %}<li class="muted">None yet.</li>{% endfor %}
       </ul>
     </section>
 
     {% if not artist.shows %}
-      {{ post_button(url_for('roster.artist_delete', artist_id=artist.id), 'Delete artist', 'danger', 'Delete this artist?') }}
+      {{ post_button(url_for('roster.artist_delete', artist_id=artist.id), 'Delete artist', 'danger small', 'Delete this artist?', icon_name='trash') }}
     {% endif %}
   </aside>
 </div>

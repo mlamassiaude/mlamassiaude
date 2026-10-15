@@ -1,42 +1,44 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge with context %}
+{% from "_macros.html" import status_badge, artist_tag, empty with context %}
 {% block title %}Invoices{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Invoices</h1>
+  <div class="title">
+    <h1>Invoices <span class="count">{{ invoices|length }}</span></h1>
+    {% if outstanding_totals %}<p class="crumb muted">Outstanding: {% for currency, total in outstanding_totals.items() %}<strong style="color: var(--ink)">{{ total|money(currency) }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  </div>
   <div class="actions">
     <form method="get" class="inline">
-      <select name="status" onchange="this.form.submit()">
+      <label class="sr-only" for="f-status">Status</label>
+      <select id="f-status" name="status" onchange="this.form.submit()">
         <option value="">Any status</option>
         {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == status }}>{{ label }}</option>{% endfor %}
         <option value="overdue" {{ 'selected' if status == 'overdue' }}>Overdue</option>
       </select>
     </form>
-    <a class="btn" href="{{ url_for('documents.invoice_new') }}">Blank invoice</a>
+    <a class="btn" href="{{ url_for('documents.invoice_new') }}">{{ icon('plus', 16) }}Blank invoice</a>
   </div>
 </div>
-<div class="kpis small">
-  {% for currency, total in outstanding_totals.items() %}<div class="kpi"><strong>{{ total|money(currency) }}</strong><span>Outstanding in {{ currency }}</span></div>{% endfor %}
-</div>
-<div class="card">
+<section class="panel flush">
 {% if invoices %}
-  <table>
-    <thead><tr><th>Number</th><th>Type</th><th>Bill to</th><th>Show</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th></tr></thead>
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Number</th><th>Bill to</th><th>Show</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th></tr></thead>
     <tbody>
     {% for i in invoices %}
       <tr class="{{ 'alert' if i.is_overdue }}">
-        <td><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.display_number }}</a></td>
-        <td>{{ i.kind|capitalize }}</td>
-        <td>{{ i.bill_to_name }}</td>
-        <td>{% if i.show %}<a href="{{ url_for('shows.show', show_id=i.show.id) }}">{{ i.show.artist.name }}, {{ i.show.date|d('%d %b') }}</a>{% endif %}</td>
-        <td>{{ i.issue_date|d }}</td>
-        <td>{{ i.due_date|d }}</td>
+        <td><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}"><strong>{{ i.display_number }}</strong></a><span class="sub">{{ i.kind|capitalize }}</span></td>
+        <td>{{ i.bill_to_name or '–' }}</td>
+        <td>{% if i.show %}{{ artist_tag(i.show.artist) }}<span class="sub"><a href="{{ url_for('shows.show', show_id=i.show.id) }}">{{ i.show.date|d('%d %b %Y') }}</a></span>{% else %}<span class="muted">–</span>{% endif %}</td>
+        <td class="nowrap">{{ i.issue_date|d or '–' }}</td>
+        <td class="nowrap">{{ i.due_date|d or '–' }}</td>
         <td>{{ status_badge(i.display_status) }}</td>
-        <td class="num">{{ i.total|money(i.currency) }}</td>
+        <td class="num"><strong>{{ i.total|money(i.currency) }}</strong></td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
-{% else %}<p class="empty">No invoices here yet. Create them from a show page.</p>{% endif %}
-</div>
+  </div>
+{% else %}<div style="padding: 1.2rem 1.3rem">{{ empty('No invoices here yet', 'Create deposit, balance and commission invoices from a show page.', 'invoice') }}</div>{% endif %}
+</section>
 {% endblock %}

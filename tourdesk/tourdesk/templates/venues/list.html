@@ -1,23 +1,30 @@
 {% extends "base.html" %}
+{% from "_macros.html" import empty with context %}
 {% block title %}Venues{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Venues</h1>
+  <div class="title"><h1>Venues <span class="count">{{ venues|length }}</span></h1></div>
   <div class="actions">
-    <form method="get" class="inline"><input type="search" name="q" value="{{ q }}" placeholder="Search name, city, country"></form>
-    <a class="btn primary" href="{{ url_for('roster.venue_edit') }}">New venue</a>
+    <form method="get" class="search" role="search">{{ icon('search', 16) }}<label class="sr-only" for="q">Search venues</label><input id="q" type="search" name="q" value="{{ q }}" placeholder="Search name, city, country"></form>
+    <a class="btn primary" href="{{ url_for('roster.venue_edit') }}">{{ icon('plus', 16) }}New venue</a>
   </div>
 </div>
-<div class="card">
+<section class="panel flush">
 {% if venues %}
-  <table>
-    <thead><tr><th>Name</th><th>City</th><th>Country</th><th class="num">Capacity</th><th>Contact</th></tr></thead>
+  <div class="table-scroll">
+  <table class="stack">
+    <thead><tr><th>Venue</th><th>City</th><th class="num">Capacity</th><th>Contact</th><th class="num">Shows</th></tr></thead>
     <tbody>
     {% for v in venues %}
-      <tr><td><a href="{{ url_for('roster.venue', venue_id=v.id) }}">{{ v.name }}</a></td><td>{{ v.city }}</td><td>{{ v.country }}</td><td class="num">{{ v.capacity or '' }}</td><td>{{ v.contact_name }} <small class="muted">{{ v.email }}</small></td></tr>
+      <tr><td><a href="{{ url_for('roster.venue', venue_id=v.id) }}"><strong>{{ v.name }}</strong></a><span class="sub">{{ v.address }}</span></td>
+        <td>{{ v.city }}<span class="sub">{{ v.country }}</span></td>
+        <td class="num">{{ v.capacity or '–' }}</td>
+        <td>{{ v.contact_name or '–' }}{% if v.email %}<span class="sub">{{ v.email }}</span>{% endif %}</td>
+        <td class="num">{{ v.shows|length }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
-{% else %}<p class="empty">No venues{% if q %} match "{{ q }}"{% endif %}.</p>{% endif %}
-</div>
+  </div>
+{% else %}<div style="padding: 1.2rem 1.3rem">{{ empty('No venues match "' ~ q ~ '"' if q else 'No venues yet', 'Venues you add can be picked when you create a show.', 'venue') }}</div>{% endif %}
+</section>
 {% endblock %}

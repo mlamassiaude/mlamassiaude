@@ -64,10 +64,19 @@ tourdesk/
   services.py    contract rendering, invoice generation, itinerary builder, .ics export
   views/         Flask blueprints: auth, dashboard/settings, roster, shows, documents, itinerary
   templates/     Jinja templates
-  static/        stylesheet (includes print styles for PDFs)
+  static/        stylesheet (includes print styles for PDFs), Hanken Grotesk font files, favicon
+  icons.py       inline Lucide icons used by the templates
   demo.py        demo data
 tests/           end to end tests through the Flask test client
 ```
+
+## Design
+
+Plain and easy on the eye: white surfaces, a light sidebar and a single teal accent for actions and the current selection. Each artist has their own colour (set on the artist's page), shown as a small dot next to their name and as an avatar on their card, so you can tell artists apart at a glance in lists and the calendar. In the calendar, confirmed shows are tinted in the artist's colour and options or pending offers are outlined only. Status colours (green confirmed or paid, amber option or to book, blue pending or sent, red overdue) are used the same way everywhere.
+
+The accent colour lives in one place: `--accent` at the top of `static/style.css`.
+
+Typeface: [Hanken Grotesk](https://github.com/marcologous/hanken-grotesk) (SIL Open Font License, `static/fonts/OFL.txt`), self-hosted. Icons: [Lucide](https://lucide.dev) (ISC licence, `static/LUCIDE-LICENSE.txt`).
 
 ## Ideas for next steps
 

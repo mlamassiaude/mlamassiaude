@@ -1,13 +1,13 @@
 import calendar as cal
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
 from .. import flash_errors, login_required_admin
 from ..forms import AGENCY_FIELDS, populate
-from ..models import Agency, Artist, Contract, Invoice, Show, User, db
+from ..models import Agency, Artist, Contract, Invoice, LogisticsItem, Show, User, db
 from ..services import CONTRACT_PLACEHOLDERS, totals_by_currency
 
 bp = Blueprint("core", __name__)
@@ -29,6 +29,15 @@ def dashboard():
     awaiting_signature = Contract.query.filter_by(status="sent").order_by(Contract.sent_at).all()
     outstanding = Invoice.query.filter_by(status="sent").order_by(Invoice.due_date).all()
     overdue = [i for i in outstanding if i.is_overdue]
+    to_book = (
+        LogisticsItem.query.filter(
+            LogisticsItem.status == "to_book",
+            LogisticsItem.start_at >= datetime.combine(today, datetime.min.time()),
+            LogisticsItem.start_at < datetime.combine(today + timedelta(days=45), datetime.min.time()),
+        )
+        .order_by(LogisticsItem.start_at)
+        .all()
+    )
     shows_needing_contract = [
         s for s in upcoming if s.status == "confirmed" and not any(c.status != "cancelled" for c in s.contracts)
     ]
@@ -57,6 +66,7 @@ def dashboard():
         outstanding_totals=totals_by_currency(outstanding),
         overdue=overdue,
         shows_needing_contract=shows_needing_contract,
+        to_book=to_book,
         per_artist=per_artist,
         year=today.year,
     )

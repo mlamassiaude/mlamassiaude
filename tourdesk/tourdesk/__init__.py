@@ -7,8 +7,10 @@ from decimal import Decimal
 from functools import wraps
 
 from flask import Flask, abort, flash, g, redirect, request, session, url_for
+from markupsafe import Markup
 
-from .models import Agency, User, db
+from .icons import ICONS
+from .models import Agency, Artist, User, db
 
 
 def create_app(config: dict | None = None) -> Flask:
@@ -95,8 +97,17 @@ def _register_hooks(app: Flask) -> None:
 
     @app.context_processor
     def inject_globals():
-        agency = Agency.get() if g.get("user") else None
-        return {"csrf_token": csrf_token, "current_user": g.get("user"), "agency": agency, "today": date.today()}
+        user = g.get("user")
+        agency = Agency.get() if user else None
+        rail_artists = Artist.query.filter_by(active=True).order_by(Artist.name).limit(12).all() if user else []
+        return {
+            "csrf_token": csrf_token,
+            "current_user": user,
+            "agency": agency,
+            "rail_artists": rail_artists,
+            "today": date.today(),
+            "icon": icon,
+        }
 
     @app.after_request
     def security_headers(response):
@@ -106,7 +117,73 @@ def _register_hooks(app: Flask) -> None:
         return response
 
 
+def icon(name: str, size: int = 18, label: str | None = None) -> Markup:
+    """Inline Lucide icon. Decorative unless a label is given."""
+    a11y = f'role="img" aria-label="{Markup.escape(label)}"' if label else 'aria-hidden="true"'
+    return Markup(
+        f'<svg class="icon" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        f'stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" {a11y}>{ICONS.get(name, "")}</svg>'
+    )
+
+
+INK = "#111318"
+
+
+def _luminance(hex_color: str) -> float:
+    value = hex_color.lstrip("#")
+    r, g_, b = (int(value[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+    def lin(c):
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * lin(r) + 0.7152 * lin(g_) + 0.0722 * lin(b)
+
+
+def _contrast(a: str, b: str) -> float:
+    la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def _mix(hex_color: str, target: str, amount: float) -> str:
+    a = [int(hex_color.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
+    b = [int(target.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(x + (y - x) * amount):02x}" for x, y in zip(a, b))
+
+
+def _valid(hex_color: str | None) -> str:
+    value = (hex_color or "").strip()
+    if len(value) == 7 and value.startswith("#"):
+        try:
+            int(value[1:], 16)
+            return value.lower()
+        except ValueError:
+            pass
+    return "#888888"
+
+
+def readable_ink(hex_color: str | None) -> str:
+    """Near-black or white text on a fill in the artist's colour."""
+    color = _valid(hex_color)
+    return "#ffffff" if _contrast(color, "#ffffff") >= _contrast(color, INK) else INK
+
+
+def readable_fill(hex_color: str | None) -> str:
+    """The artist's colour, nudged darker or lighter only as far as needed for
+    text on it (an avatar initial) to reach 4.5:1."""
+    color = _valid(hex_color)
+    ink = readable_ink(color)
+    target = "#000000" if ink == "#ffffff" else "#ffffff"
+    step = 0
+    while _contrast(color, ink) < 4.5 and step < 20:
+        step += 1
+        color = _mix(_valid(hex_color), target, step * 0.04)
+    return color
+
+
 def _register_filters(app: Flask) -> None:
+    app.add_template_filter(readable_ink, "ink")
+    app.add_template_filter(readable_fill, "fill")
+
     @app.template_filter("money")
     def money(value, currency=None):
         if value is None:
