@@ -41,10 +41,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 flask --app wsgi seed-demo   # optional: demo agency, log in as demo@tourdesk.local / demo1234
-flask --app wsgi run
+flask --app wsgi run --port 8000
 ```
 
-Open http://127.0.0.1:5000. Without demo data, the first visit asks you to create your agency and admin account.
+Open http://127.0.0.1:8000. (Port 8000 rather than Flask's default 5000, because macOS uses 5000 for AirPlay Receiver and answers with a 403.) Without demo data, the first visit asks you to create your agency and admin account.
 
 Data lives in `instance/tourdesk.db`. Set `TOURDESK_DATABASE_URL` to use another database (any SQLAlchemy URL, e.g. Postgres) and `TOURDESK_SECRET_KEY` in production.
 
