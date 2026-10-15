@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import artist_dot with context %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ first|d('%B %Y') }}</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('core.calendar', year=prev_month.year, month=prev_month.month, artist=artist_id) }}">← Previous</a>
+    <a class="btn" href="{{ url_for('core.calendar', artist=artist_id) }}">Today</a>
+    <a class="btn" href="{{ url_for('core.calendar', year=next_month.year, month=next_month.month, artist=artist_id) }}">Next →</a>
+    <form method="get" class="inline">
+      <input type="hidden" name="year" value="{{ first.year }}"><input type="hidden" name="month" value="{{ first.month }}">
+      <select name="artist" onchange="this.form.submit()">
+        <option value="">All artists</option>
+        {% for a in artists %}<option value="{{ a.id }}" {{ 'selected' if a.id == artist_id }}>{{ a.name }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+<div class="calendar card">
+  {% for name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<div class="dow">{{ name }}</div>{% endfor %}
+  {% for week in weeks %}{% for day in week %}
+    <div class="day {{ 'other' if day.month != first.month }} {{ 'today' if day == today }}">
+      <a class="num" href="{{ url_for('shows.show_new', date=day.isoformat(), artist=artist_id) }}" title="New show on this day">{{ day.day }}</a>
+      {% for s in by_day.get(day, []) %}
+        <a class="event s-{{ s.status }}" style="border-left-color: {{ s.artist.color }}" href="{{ url_for('shows.show', show_id=s.id) }}">
+          {{ s.artist.name }}<small>{{ s.display_city }}</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}{% endfor %}
+</div>
+<p class="muted legend"><span class="badge s-option">Option</span> <span class="badge s-pending">Pending</span> <span class="badge s-confirmed">Confirmed</span> <span class="badge s-played">Played</span> <span class="badge s-cancelled">Cancelled</span> Click a day number to create a show on that date.</p>
+{% endblock %}

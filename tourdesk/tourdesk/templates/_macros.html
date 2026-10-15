@@ -1,0 +1,50 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field_value(f, obj) -%}
+  {%- if request.method == 'POST' and f.name in request.form -%}{{ request.form.get(f.name) }}{%- else -%}{{ f.display_value(obj) }}{%- endif -%}
+{%- endmacro %}
+
+{% macro render_field(f, obj) %}
+  {% set value = field_value(f, obj) %}
+  <label class="field {{ 'wide' if f.wide }} {{ 'checkbox' if f.type == 'checkbox' }}">
+    {% if f.type == 'checkbox' %}
+      {% set checked = (request.form.get(f.name) if request.method == 'POST' else (obj and obj[f.name])) %}
+      <input type="checkbox" name="{{ f.name }}" {{ 'checked' if checked }}>
+      <span>{{ f.label }}</span>
+    {% else %}
+      <span>{{ f.label }}{% if f.required %} <em>*</em>{% endif %}</span>
+      {% if f.type == 'textarea' %}
+        <textarea name="{{ f.name }}" rows="{{ f.extra.get('rows', 4) }}" {{ 'required' if f.required }} placeholder="{{ f.placeholder }}">{{ value }}</textarea>
+      {% elif f.type in ('select', 'select_int') %}
+        <select name="{{ f.name }}" {{ 'required' if f.required }}>
+          {% if f.required and f.type == 'select_int' %}<option value="">Choose…</option>{% endif %}
+          {% for v, label in f.get_choices() %}
+            <option value="{{ v }}" {{ 'selected' if v == value }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        {% set input_type = {'money': 'number', 'percent': 'number', 'datetime': 'datetime-local'}.get(f.type, f.type) %}
+        <input type="{{ input_type }}" name="{{ f.name }}" value="{{ value }}" placeholder="{{ f.placeholder }}"
+          {% if f.type == 'money' %}step="0.01" min="0"{% elif f.type == 'percent' %}step="0.01" min="0" max="100"{% endif %}
+          {{ 'required' if f.required }}>
+      {% endif %}
+    {% endif %}
+    {% if f.help %}<small>{{ f.help }}</small>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro status_badge(status, label=None) %}<span class="badge s-{{ status }}">{{ label or status|replace('_', ' ')|capitalize }}</span>{% endmacro %}
+
+{% macro artist_dot(artist) %}<span class="dot" style="background: {{ artist.color or '#888' }}"></span>{% endmacro %}
+
+{% macro post_button(action, label, cls='', confirm=None, name=None, value=None) %}
+<form method="post" action="{{ action }}" class="inline" {% if confirm %}onsubmit="return confirm('{{ confirm }}')"{% endif %}>
+  {{ csrf() }}
+  {% if name %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}
+  <button class="btn {{ cls }}">{{ label }}</button>
+</form>
+{% endmacro %}
+
+{% macro show_place(show) -%}
+  {{ show.event_name or (show.venue.name if show.venue else '') }}{% if show.display_city %}{{ ', ' if (show.event_name or show.venue) }}{{ show.display_city }}{% endif %}{% if show.display_country %} ({{ show.display_country }}){% endif %}
+{%- endmacro %}

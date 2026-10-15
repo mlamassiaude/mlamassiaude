@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import artist_dot, show_place with context %}
+{% block title %}Roster{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Roster <small class="muted">{{ artists|length }} artists</small></h1>
+  <div class="actions">
+    {% if show_inactive %}<a class="btn" href="{{ url_for('roster.artists') }}">Active only</a>{% else %}<a class="btn" href="{{ url_for('roster.artists', all=1) }}">Include inactive</a>{% endif %}
+    <a class="btn primary" href="{{ url_for('roster.artist_new') }}">Add artist</a>
+  </div>
+</div>
+{% if artists %}
+<div class="roster">
+  {% for a in artists %}
+  <a class="card artist-card {{ 'inactive' if not a.active }}" href="{{ url_for('roster.artist', artist_id=a.id) }}" style="border-top-color: {{ a.color }}">
+    <h3>{{ a.name }}</h3>
+    <p class="muted">{{ a.genre }}{% if a.home_city %} · {{ a.home_city }}{% endif %}</p>
+    <dl>
+      <dt>Agent</dt><dd>{{ a.agent.name if a.agent else 'Unassigned' }}</dd>
+      <dt>Default fee</dt><dd>{{ a.default_fee|money(a.currency) }}</dd>
+      <dt>Next show</dt><dd>{% set n = next_show[a.id] %}{% if n %}{{ n.date|d }} · {{ show_place(n) }}{% else %}None booked{% endif %}</dd>
+    </dl>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="card empty">Your roster is empty. <a href="{{ url_for('roster.artist_new') }}">Add your first artist.</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, render_field, csrf, post_button, show_place with context %}
+{% block title %}{{ artist.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1><span class="dot big" style="background: {{ artist.color }}"></span>{{ artist.name }} {% if not artist.active %}<span class="badge">Inactive</span>{% endif %}</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('roster.artist_edit', artist_id=artist.id) }}">Edit</a>
+    <a class="btn" href="{{ url_for('itinerary.itinerary_edit', artist=artist.id) }}">New itinerary</a>
+    <a class="btn" href="{{ url_for('shows.logistics_new', artist=artist.id) }}">Add travel / hotel</a>
+    <a class="btn primary" href="{{ url_for('shows.show_new', artist=artist.id) }}">New show</a>
+  </div>
+</div>
+
+<div class="columns">
+  <div>
+    <section class="card">
+      <h2>Upcoming shows</h2>
+      {% if upcoming %}
+      <table>
+        <thead><tr><th>Date</th><th>Where</th><th>Status</th><th class="num">Fee</th><th>Contract</th></tr></thead>
+        <tbody>
+        {% for s in upcoming %}
+          <tr>
+            <td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d('%a %d %b %Y') }}</a></td>
+            <td>{{ show_place(s) }}</td>
+            <td>{{ status_badge(s.status) }}</td>
+            <td class="num">{{ s.fee|money(s.currency) }}</td>
+            <td>{% set c = s.contracts|rejectattr('status', 'equalto', 'cancelled')|list|last %}{% if c %}{{ status_badge(c.status) }}{% else %}<span class="muted">None</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="empty">No upcoming shows.</p>{% endif %}
+    </section>
+
+    <section class="card" id="logistics">
+      <h2>Upcoming travel and hotels</h2>
+      {% if logistics %}
+      <table>
+        <thead><tr><th>When</th><th>Type</th><th>Details</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for item in logistics %}
+          <tr>
+            <td class="nowrap">{{ item.start_at|d('%d %b %H:%M') }}</td>
+            <td>{{ item.kind|capitalize }}</td>
+            <td>{{ item.label }}{% if item.reference %} <small class="muted">Ref {{ item.reference }}</small>{% endif %}</td>
+            <td>{{ status_badge(item.status) }}</td>
+            <td><a href="{{ url_for('shows.logistics_edit', item_id=item.id) }}">Edit</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="empty">Nothing booked yet.</p>{% endif %}
+    </section>
+
+    {% if past %}
+    <section class="card">
+      <h2>Recent shows</h2>
+      <table>
+        <tbody>
+        {% for s in past %}
+          <tr><td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d }}</a></td><td>{{ show_place(s) }}</td><td>{{ status_badge(s.status) }}</td><td class="num">{{ s.fee|money(s.currency) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>Profile</h2>
+      <dl class="facts">
+        <dt>Genre</dt><dd>{{ artist.genre or '–' }}</dd>
+        <dt>Based in</dt><dd>{{ ', '.join([artist.home_city, artist.country]|select) or '–' }}</dd>
+        <dt>Agent</dt><dd>{{ artist.agent.name if artist.agent else 'Unassigned' }}</dd>
+        <dt>Default fee</dt><dd>{{ artist.default_fee|money(artist.currency) }}</dd>
+        <dt>Commission</dt><dd>{{ artist.commission_rate|pct }}</dd>
+        <dt>Email</dt><dd>{{ artist.email or '–' }}</dd>
+        <dt>Phone</dt><dd>{{ artist.phone or '–' }}</dd>
+        {% if artist.website %}<dt>Website</dt><dd>{% if artist.website|safe_url %}<a href="{{ artist.website|safe_url }}" rel="noopener" target="_blank">{{ artist.website }}</a>{% else %}{{ artist.website }}{% endif %}</dd>{% endif %}
+      </dl>
+      {% if artist.bio %}<p class="pre">{{ artist.bio }}</p>{% endif %}
+    </section>
+
+    <section class="card" id="party">
+      <h2>Travel party</h2>
+      <ul class="people">
+        {% for m in artist.members %}
+          <li>
+            <strong>{{ m.name }}</strong> <span class="muted">{{ m.role }}</span><br>
+            <small>{{ m.email }} {{ m.phone }}</small>
+            {{ post_button(url_for('roster.member_delete', member_id=m.id), 'Remove', 'small link', 'Remove this person?') }}
+          </li>
+        {% else %}<li class="muted">No one added yet.</li>{% endfor %}
+      </ul>
+      <details>
+        <summary>Add a person</summary>
+        <form method="post" action="{{ url_for('roster.member_add', artist_id=artist.id) }}" class="form compact">
+          {{ csrf() }}
+          {% for f in member_fields %}{{ render_field(f, None) }}{% endfor %}
+          <button class="btn primary">Add</button>
+        </form>
+      </details>
+    </section>
+
+    {% if artist.tech_rider or artist.hospitality_rider %}
+    <section class="card">
+      <h2>Riders</h2>
+      {% if artist.tech_rider %}<h3>Technical</h3><p class="pre">{{ artist.tech_rider }}</p>{% endif %}
+      {% if artist.hospitality_rider %}<h3>Hospitality</h3><p class="pre">{{ artist.hospitality_rider }}</p>{% endif %}
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <h2>Itineraries</h2>
+      <ul class="plain">
+        {% for it in itineraries %}<li><a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}">{{ it.title }}</a> <small class="muted">{{ it.start_date|d('%d %b') }} to {{ it.end_date|d }}</small></li>
+        {% else %}<li class="muted">None yet.</li>{% endfor %}
+      </ul>
+    </section>
+
+    {% if not artist.shows %}
+      {{ post_button(url_for('roster.artist_delete', artist_id=artist.id), 'Delete artist', 'danger', 'Delete this artist?') }}
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

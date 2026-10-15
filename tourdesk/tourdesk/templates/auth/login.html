@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block main_class %}auth{% endblock %}
+{% block content %}
+<form method="post" class="card auth-card">
+  {{ csrf() }}
+  <h1>TourDesk</h1>
+  <p class="muted">Sign in to your agency workspace.</p>
+  <label class="field"><span>Email</span><input type="email" name="email" required autofocus></label>
+  <label class="field"><span>Password</span><input type="password" name="password" required></label>
+  <button class="btn primary block">Sign in</button>
+</form>
+{% endblock %}

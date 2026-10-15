@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, artist_dot, show_place with context %}
+{% block title %}Contracts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Contracts</h1>
+  <div class="actions">
+    <form method="get" class="inline">
+      <select name="status" onchange="this.form.submit()">
+        <option value="">Any status</option>
+        {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == status }}>{{ label }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+<p class="muted">Contracts are generated from a show. Open a show and click Generate. The template lives in Settings.</p>
+<div class="card">
+{% if contracts %}
+  <table>
+    <thead><tr><th>Number</th><th>Show date</th><th>Artist</th><th>Where</th><th>Promoter</th><th>Status</th><th>Sent</th><th>Signed</th></tr></thead>
+    <tbody>
+    {% for c in contracts %}
+      <tr>
+        <td><a href="{{ url_for('documents.contract', contract_id=c.id) }}">{{ c.number }}</a></td>
+        <td class="nowrap">{{ c.show.date|d }}</td>
+        <td>{{ artist_dot(c.show.artist) }}{{ c.show.artist.name }}</td>
+        <td>{{ show_place(c.show) }}</td>
+        <td>{{ c.show.promoter.company if c.show.promoter else '' }}</td>
+        <td>{{ status_badge(c.status) }}</td>
+        <td>{{ c.sent_at|d }}</td>
+        <td>{{ c.signed_at|d }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}<p class="empty">No contracts{% if status %} with this status{% endif %}.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, artist_dot, show_place with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('roster.artist_new') }}">Add artist</a>
+    <a class="btn primary" href="{{ url_for('shows.show_new') }}">New show</a>
+  </div>
+</div>
+
+<div class="kpis">
+  <a class="kpi" href="{{ url_for('shows.shows', status='confirmed') }}"><strong>{{ confirmed_30 }}</strong><span>Confirmed shows in the next 30 days</span></a>
+  <a class="kpi" href="{{ url_for('shows.shows', status='option') }}"><strong>{{ open_options }}</strong><span>Open options and pending offers</span></a>
+  <a class="kpi" href="{{ url_for('documents.contracts', status='sent') }}"><strong>{{ awaiting_signature|length }}</strong><span>Contracts awaiting signature</span></a>
+  <a class="kpi {{ 'alert' if overdue }}" href="{{ url_for('documents.invoices', status='overdue' if overdue else 'sent') }}">
+    <strong>{{ overdue|length }} / {{ outstanding|length }}</strong><span>Overdue / outstanding invoices</span>
+  </a>
+</div>
+
+<div class="columns">
+  <section class="card">
+    <h2>Upcoming shows</h2>
+    {% if upcoming %}
+    <table>
+      <thead><tr><th>Date</th><th>Artist</th><th>Where</th><th>Status</th><th class="num">Fee</th></tr></thead>
+      <tbody>
+      {% for s in upcoming %}
+        <tr>
+          <td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d('%a %d %b') }}</a></td>
+          <td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td>
+          <td>{{ show_place(s) }}</td>
+          <td>{{ status_badge(s.status) }}</td>
+          <td class="num">{{ s.fee|money(s.currency) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty">No upcoming shows yet. <a href="{{ url_for('shows.show_new') }}">Create the first one.</a></p>
+    {% endif %}
+  </section>
+
+  <aside>
+    <section class="card">
+      <h2>To do</h2>
+      <ul class="todo">
+        {% for s in shows_needing_contract %}
+          <li><a href="{{ url_for('shows.show', show_id=s.id) }}">Issue contract</a> for {{ s.artist.name }}, {{ s.date|d }}</li>
+        {% endfor %}
+        {% for c in awaiting_signature %}
+          <li><a href="{{ url_for('documents.contract', contract_id=c.id) }}">Chase signature</a> on {{ c.number }} ({{ c.show.artist.name }}, sent {{ c.sent_at|d }})</li>
+        {% endfor %}
+        {% for i in overdue %}
+          <li class="alert"><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.number }}</a> is overdue: {{ i.total|money(i.currency) }} from {{ i.bill_to_name }}</li>
+        {% endfor %}
+        {% if not (shows_needing_contract or awaiting_signature or overdue) %}<li class="muted">Nothing urgent. Nice.</li>{% endif %}
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Outstanding receivables</h2>
+      {% for currency, total in outstanding_totals.items() %}
+        <p class="big">{{ total|money(currency) }}</p>
+      {% else %}
+        <p class="muted">All issued invoices are paid.</p>
+      {% endfor %}
+    </section>
+  </aside>
+</div>
+
+<section class="card">
+  <h2>{{ year }} by artist <small class="muted">confirmed and played shows</small></h2>
+  {% if per_artist %}
+  <table>
+    <thead><tr><th>Artist</th><th class="num">Shows</th><th class="num">Gross fees</th><th class="num">Agency commission</th></tr></thead>
+    <tbody>
+    {% for artist, row in per_artist %}
+      <tr>
+        <td>{{ artist_dot(artist) }}<a href="{{ url_for('roster.artist', artist_id=artist.id) }}">{{ artist.name }}</a></td>
+        <td class="num">{{ row.shows }}</td>
+        <td class="num">{% for c, v in row.gross.items() %}{{ v|money(c) }}<br>{% endfor %}</td>
+        <td class="num">{% for c, v in row.commission.items() %}{{ v|money(c) }}<br>{% endfor %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="empty">No confirmed shows this year yet.</p>{% endif %}
+</section>
+{% endblock %}

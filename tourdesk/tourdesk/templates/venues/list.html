@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Venues{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Venues</h1>
+  <div class="actions">
+    <form method="get" class="inline"><input type="search" name="q" value="{{ q }}" placeholder="Search name, city, country"></form>
+    <a class="btn primary" href="{{ url_for('roster.venue_edit') }}">New venue</a>
+  </div>
+</div>
+<div class="card">
+{% if venues %}
+  <table>
+    <thead><tr><th>Name</th><th>City</th><th>Country</th><th class="num">Capacity</th><th>Contact</th></tr></thead>
+    <tbody>
+    {% for v in venues %}
+      <tr><td><a href="{{ url_for('roster.venue', venue_id=v.id) }}">{{ v.name }}</a></td><td>{{ v.city }}</td><td>{{ v.country }}</td><td class="num">{{ v.capacity or '' }}</td><td>{{ v.contact_name }} <small class="muted">{{ v.email }}</small></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}<p class="empty">No venues{% if q %} match "{{ q }}"{% endif %}.</p>{% endif %}
+</div>
+{% endblock %}

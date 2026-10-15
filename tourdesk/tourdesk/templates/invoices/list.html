@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge with context %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Invoices</h1>
+  <div class="actions">
+    <form method="get" class="inline">
+      <select name="status" onchange="this.form.submit()">
+        <option value="">Any status</option>
+        {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == status }}>{{ label }}</option>{% endfor %}
+        <option value="overdue" {{ 'selected' if status == 'overdue' }}>Overdue</option>
+      </select>
+    </form>
+    <a class="btn" href="{{ url_for('documents.invoice_new') }}">Blank invoice</a>
+  </div>
+</div>
+<div class="kpis small">
+  {% for currency, total in outstanding_totals.items() %}<div class="kpi"><strong>{{ total|money(currency) }}</strong><span>Outstanding in {{ currency }}</span></div>{% endfor %}
+</div>
+<div class="card">
+{% if invoices %}
+  <table>
+    <thead><tr><th>Number</th><th>Type</th><th>Bill to</th><th>Show</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for i in invoices %}
+      <tr class="{{ 'alert' if i.is_overdue }}">
+        <td><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.display_number }}</a></td>
+        <td>{{ i.kind|capitalize }}</td>
+        <td>{{ i.bill_to_name }}</td>
+        <td>{% if i.show %}<a href="{{ url_for('shows.show', show_id=i.show.id) }}">{{ i.show.artist.name }}, {{ i.show.date|d('%d %b') }}</a>{% endif %}</td>
+        <td>{{ i.issue_date|d }}</td>
+        <td>{{ i.due_date|d }}</td>
+        <td>{{ status_badge(i.display_status) }}</td>
+        <td class="num">{{ i.total|money(i.currency) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}<p class="empty">No invoices here yet. Create them from a show page.</p>{% endif %}
+</div>
+{% endblock %}

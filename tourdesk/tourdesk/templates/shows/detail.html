@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, post_button, csrf, show_place with context %}
+{% block title %}{{ show.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="crumb"><a href="{{ url_for('roster.artist', artist_id=show.artist.id) }}"><span class="dot" style="background: {{ show.artist.color }}"></span>{{ show.artist.name }}</a></p>
+    <h1>{{ show.date|d('%A %d %B %Y') }} · {{ show_place(show) }}</h1>
+  </div>
+  <div class="actions">
+    <form method="post" action="{{ url_for('shows.show_status', show_id=show.id) }}" class="inline">
+      {{ csrf() }}
+      <select name="status" onchange="this.form.submit()" aria-label="Status">
+        {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == show.status }}>{{ label }}</option>{% endfor %}
+      </select>
+    </form>
+    <a class="btn" href="{{ url_for('itinerary.day_sheet', show_id=show.id) }}">Day sheet</a>
+    <a class="btn primary" href="{{ url_for('shows.show_edit', show_id=show.id) }}">Edit show</a>
+  </div>
+</div>
+
+<div class="columns">
+  <div>
+    <section class="card">
+      <h2>Deal</h2>
+      <p class="deal">{{ show.deal_summary }}</p>
+      <dl class="facts cols">
+        <dt>Deposit</dt><dd>{{ show.deposit_amount|money(show.currency) }} ({{ show.deposit_percent|pct }})</dd>
+        <dt>Balance</dt><dd>{{ show.balance_amount|money(show.currency) }}</dd>
+        <dt>Agency commission</dt><dd>{{ show.commission_amount|money(show.currency) }} ({{ show.artist.commission_rate|pct }})</dd>
+        <dt>Hospitality buyout</dt><dd>{{ show.hospitality_buyout|money(show.currency) }}</dd>
+        <dt>Ticket price</dt><dd>{{ show.ticket_price|money(show.currency) }}</dd>
+        <dt>Capacity</dt><dd>{{ show.capacity or (show.venue.capacity if show.venue else '') or '–' }}</dd>
+        <dt>Invoiced so far</dt><dd>{{ show.invoiced_total|money(show.currency) }}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Schedule</h2>
+      <div class="timeline">
+        {% for label, value in [('Load in', show.load_in), ('Soundcheck', show.soundcheck), ('Doors', show.doors_time), ('Set', show.set_time), ('Curfew', show.curfew)] %}
+          <div class="{{ 'empty' if not value }}"><strong>{{ value or '–' }}</strong><span>{{ label }}{% if label == 'Set' and show.set_length %} · {{ show.set_length }} min{% endif %}</span></div>
+        {% endfor %}
+      </div>
+      {% if show.production_notes %}<h3>Production / advancing</h3><p class="pre">{{ show.production_notes }}</p>{% endif %}
+    </section>
+
+    <section class="card" id="logistics">
+      <div class="section-head">
+        <h2>Logistics</h2>
+        <div class="actions">
+          <a class="btn small" href="{{ url_for('shows.logistics_new', show=show.id, kind='flight') }}">+ Flight</a>
+          <a class="btn small" href="{{ url_for('shows.logistics_new', show=show.id, kind='train') }}">+ Train</a>
+          <a class="btn small" href="{{ url_for('shows.logistics_new', show=show.id, kind='ground') }}">+ Transfer</a>
+          <a class="btn small" href="{{ url_for('shows.logistics_new', show=show.id, kind='hotel') }}">+ Hotel</a>
+        </div>
+      </div>
+      {% if show.logistics %}
+      <table>
+        <thead><tr><th>When</th><th>Type</th><th>Details</th><th>Travellers</th><th>Status</th><th class="num">Cost</th><th></th></tr></thead>
+        <tbody>
+        {% for item in show.logistics %}
+          <tr>
+            <td class="nowrap">{{ item.start_at|d('%d %b %H:%M') }}{% if item.end_at %}<br><small class="muted">to {{ item.end_at|d('%d %b %H:%M') }}</small>{% endif %}</td>
+            <td>{{ item.kind|capitalize }}</td>
+            <td>{{ item.label }}{% if item.provider and item.kind != 'hotel' %}<br><small class="muted">{{ item.provider }}</small>{% endif %}{% if item.reference %}<br><small class="muted">Ref {{ item.reference }}</small>{% endif %}</td>
+            <td><small>{{ item.travellers }}</small></td>
+            <td>{{ status_badge(item.status) }}</td>
+            <td class="num">{{ item.cost|money(item.currency) if item.cost else '' }}</td>
+            <td class="nowrap"><a href="{{ url_for('shows.logistics_edit', item_id=item.id) }}">Edit</a> {{ post_button(url_for('shows.logistics_delete', item_id=item.id), '×', 'small link', 'Remove this booking?') }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="empty">No travel or hotel yet for this show.</p>{% endif %}
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>Contacts</h2>
+      <dl class="facts">
+        <dt>Venue</dt><dd>{% if show.venue %}<a href="{{ url_for('roster.venue', venue_id=show.venue.id) }}">{{ show.venue.name }}</a><br><small>{{ show.venue.address }}</small>{% else %}–{% endif %}</dd>
+        <dt>Promoter</dt><dd>{% if show.promoter %}<a href="{{ url_for('roster.promoter', promoter_id=show.promoter.id) }}">{{ show.promoter.company }}</a><br><small>{{ show.promoter.contact_name }} {{ show.promoter.email }} {{ show.promoter.phone }}</small>{% else %}–{% endif %}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h2>Contracts</h2>
+        {{ post_button(url_for('documents.contract_create', show_id=show.id), 'Generate', 'small primary') }}
+      </div>
+      <ul class="plain">
+        {% for c in show.contracts %}
+          <li><a href="{{ url_for('documents.contract', contract_id=c.id) }}">{{ c.number }}</a> {{ status_badge(c.status) }}</li>
+        {% else %}<li class="muted">No contract yet.{% if not show.promoter %} Add a promoter to the show first so the contract is complete.{% endif %}</li>{% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Invoices</h2>
+      <ul class="plain">
+        {% for i in show.invoices %}
+          <li><a href="{{ url_for('documents.invoice', invoice_id=i.id) }}">{{ i.display_number }}</a> {{ i.kind }} · {{ i.total|money(i.currency) }} {{ status_badge(i.display_status) }}</li>
+        {% else %}<li class="muted">No invoices yet.</li>{% endfor %}
+      </ul>
+      <form method="post" action="{{ url_for('documents.invoice_create', show_id=show.id) }}" class="inline-form">
+        {{ csrf() }}
+        <select name="kind">
+          <option value="deposit">Deposit to promoter</option>
+          <option value="balance">Balance to promoter</option>
+          <option value="full">Full fee to promoter</option>
+          <option value="commission">Commission to artist</option>
+        </select>
+        <button class="btn small primary">Create</button>
+      </form>
+    </section>
+
+    {% if show.notes %}
+    <section class="card"><h2>Internal notes</h2><p class="pre">{{ show.notes }}</p></section>
+    {% endif %}
+
+    {{ post_button(url_for('shows.show_delete', show_id=show.id), 'Delete show', 'danger small', 'Delete this show? Draft invoices are removed too.') }}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import artist_dot with context %}
+{% block title %}Itineraries{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Itineraries</h1>
+  <div class="actions"><a class="btn primary" href="{{ url_for('itinerary.itinerary_edit') }}">New itinerary</a></div>
+</div>
+<p class="muted">An itinerary pulls every show, travel leg and hotel for one artist across a date range into a day by day plan you can print or share with the travel party.</p>
+<div class="card">
+{% if itineraries %}
+  <table>
+    <thead><tr><th>Title</th><th>Artist</th><th>From</th><th>To</th><th>Sharing</th></tr></thead>
+    <tbody>
+    {% for it in itineraries %}
+      <tr>
+        <td><a href="{{ url_for('itinerary.itinerary', itinerary_id=it.id) }}">{{ it.title }}</a></td>
+        <td>{{ artist_dot(it.artist) }}{{ it.artist.name }}</td>
+        <td>{{ it.start_date|d }}</td><td>{{ it.end_date|d }}</td>
+        <td>{{ 'Link on' if it.share_enabled else 'Private' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}<p class="empty">No itineraries yet.</p>{% endif %}
+</div>
+{% endblock %}

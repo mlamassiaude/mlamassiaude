@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block main_class %}auth{% endblock %}
+{% block content %}
+<form method="post" class="card auth-card">
+  {{ csrf() }}
+  <h1>Set up TourDesk</h1>
+  <p class="muted">Create your agency and the first admin account. You can invite your colleagues afterwards.</p>
+  <label class="field"><span>Agency name</span><input name="agency_name" value="{{ request.form.agency_name }}" required></label>
+  <label class="field"><span>Your name</span><input name="name" value="{{ request.form.name }}" required></label>
+  <label class="field"><span>Email</span><input type="email" name="email" value="{{ request.form.email }}" required></label>
+  <label class="field"><span>Password</span><input type="password" name="password" minlength="8" required><small>At least 8 characters</small></label>
+  <button class="btn primary block">Create workspace</button>
+</form>
+{% endblock %}

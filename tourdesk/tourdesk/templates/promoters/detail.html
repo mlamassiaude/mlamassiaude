@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, post_button, artist_dot, show_place with context %}
+{% block title %}{{ promoter.company }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ promoter.company }}</h1>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('roster.promoter_edit', promoter_id=promoter.id) }}">Edit</a>
+    {% if not promoter.shows %}{{ post_button(url_for('roster.promoter_delete', promoter_id=promoter.id), 'Delete', 'danger', 'Delete this promoter?') }}{% endif %}
+  </div>
+</div>
+<div class="columns">
+  <section class="card">
+    <h2>Shows with this promoter</h2>
+    {% if shows %}
+    <table><tbody>
+      {% for s in shows %}<tr><td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d }}</a></td><td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td><td>{{ show_place(s) }}</td><td>{{ status_badge(s.status) }}</td><td class="num">{{ s.fee|money(s.currency) }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}<p class="empty">No shows yet.</p>{% endif %}
+  </section>
+  <aside class="card">
+    <dl class="facts">
+      <dt>Contact</dt><dd>{{ promoter.contact_name or '–' }}</dd>
+      <dt>Email</dt><dd>{{ promoter.email or '–' }}</dd>
+      <dt>Phone</dt><dd>{{ promoter.phone or '–' }}</dd>
+      <dt>VAT</dt><dd>{{ promoter.vat_number or '–' }}</dd>
+      <dt>Billing</dt><dd class="pre">{{ promoter.billing_address or '–' }}</dd>
+    </dl>
+    {% if promoter.notes %}<p class="pre">{{ promoter.notes }}</p>{% endif %}
+  </aside>
+</div>
+{% endblock %}

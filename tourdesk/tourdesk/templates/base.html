@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ title or "TourDesk" }}{% endblock %} · TourDesk</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% if print_mode %}print-mode{% endif %}">
+{% if current_user and not print_mode and not shared %}
+<header class="topbar no-print">
+  <a class="brand" href="{{ url_for('core.dashboard') }}">TourDesk<span>{{ agency.name if agency }}</span></a>
+  <nav>
+    {% set ep = request.endpoint or '' %}
+    <a href="{{ url_for('core.dashboard') }}" class="{{ 'active' if ep == 'core.dashboard' }}">Dashboard</a>
+    <a href="{{ url_for('core.calendar') }}" class="{{ 'active' if ep == 'core.calendar' }}">Calendar</a>
+    <a href="{{ url_for('roster.artists') }}" class="{{ 'active' if 'artist' in ep }}">Roster</a>
+    <a href="{{ url_for('shows.shows') }}" class="{{ 'active' if ep.startswith('shows.') }}">Shows</a>
+    <a href="{{ url_for('itinerary.itineraries') }}" class="{{ 'active' if ep.startswith('itinerary.') }}">Itineraries</a>
+    <a href="{{ url_for('documents.contracts') }}" class="{{ 'active' if 'contract' in ep }}">Contracts</a>
+    <a href="{{ url_for('documents.invoices') }}" class="{{ 'active' if 'invoice' in ep }}">Invoices</a>
+    <a href="{{ url_for('roster.venues') }}" class="{{ 'active' if 'venue' in ep }}">Venues</a>
+    <a href="{{ url_for('roster.promoters') }}" class="{{ 'active' if 'promoter' in ep }}">Promoters</a>
+  </nav>
+  <div class="user">
+    {% if current_user.is_admin %}<a href="{{ url_for('core.settings') }}">Settings</a>{% endif %}
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="link">Log out {{ current_user.name.split(' ')[0] }}</button>
+    </form>
+  </div>
+</header>
+{% endif %}
+<main class="{% block main_class %}container{% endblock %}">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }} no-print">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

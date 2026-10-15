@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, csrf with context %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Agency settings</h1>
+  <div class="actions"><a class="btn" href="{{ url_for('core.users') }}">Team members</a></div>
+</div>
+<form method="post" class="card form">
+  {{ csrf() }}
+  <div class="grid">{% for f in fields %}{{ render_field(f, obj) }}{% endfor %}</div>
+  <details class="placeholders">
+    <summary>Contract placeholders</summary>
+    <table>{% for key, label in placeholders.items() %}<tr><td><code>{{ '{{' }}{{ key }}{{ '}}' }}</code></td><td>{{ label }}</td></tr>{% endfor %}</table>
+  </details>
+  <div class="actions"><button class="btn primary">Save settings</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, artist_dot, show_place with context %}
+{% block title %}Shows{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Shows</h1>
+  <div class="actions">
+    <form method="get" class="inline filters">
+      <select name="artist" onchange="this.form.submit()">
+        <option value="">All artists</option>
+        {% for a in artists %}<option value="{{ a.id }}" {{ 'selected' if a.id == artist_id }}>{{ a.name }}</option>{% endfor %}
+      </select>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">Any status</option>
+        {% for v, label in statuses %}<option value="{{ v }}" {{ 'selected' if v == status }}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="when" onchange="this.form.submit()">
+        <option value="upcoming" {{ 'selected' if when != 'past' }}>Upcoming</option>
+        <option value="past" {{ 'selected' if when == 'past' }}>Past</option>
+      </select>
+    </form>
+    <a class="btn primary" href="{{ url_for('shows.show_new', artist=artist_id) }}">New show</a>
+  </div>
+</div>
+<div class="card">
+{% if shows %}
+  <table>
+    <thead><tr><th>Date</th><th>Artist</th><th>Event / venue</th><th>Promoter</th><th>Status</th><th>Deal</th><th class="num">Fee</th></tr></thead>
+    <tbody>
+    {% for s in shows %}
+      <tr>
+        <td class="nowrap"><a href="{{ url_for('shows.show', show_id=s.id) }}">{{ s.date|d('%a %d %b %Y') }}</a></td>
+        <td>{{ artist_dot(s.artist) }}{{ s.artist.name }}</td>
+        <td>{{ show_place(s) }}</td>
+        <td>{{ s.promoter.company if s.promoter else '' }}</td>
+        <td>{{ status_badge(s.status) }}</td>
+        <td><small>{{ s.deal_type|replace('_', ' ') }}</small></td>
+        <td class="num">{{ s.fee|money(s.currency) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}<p class="empty">No shows match these filters.</p>{% endif %}
+</div>
+{% endblock %}
