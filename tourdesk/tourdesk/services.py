@@ -3,7 +3,7 @@
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from .models import (
@@ -286,7 +286,7 @@ def _ics_dt(value: datetime) -> str:
 
 
 def itinerary_ics(itinerary, days: list[ItineraryDay], host: str) -> str:
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",

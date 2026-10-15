@@ -1,9 +1,11 @@
 """Small declarative form helper.
 
 Each form is a list of ``Field`` objects. ``render`` support lives in
-``templates/_form.html``; ``populate`` parses submitted values onto a model
-and returns a dict of errors keyed by field name.
+``templates/_macros.html``; ``populate`` parses submitted values onto a model
+and returns a dict of errors keyed by field label.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime

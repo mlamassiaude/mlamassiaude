@@ -5,7 +5,7 @@ amount, and is exposed to Python as ``Decimal``.
 """
 
 import secrets
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from flask_sqlalchemy import SQLAlchemy
@@ -39,7 +39,7 @@ class Money(TypeDecorator):
 
 
 def utcnow() -> datetime:
-    return datetime.now(UTC).replace(tzinfo=None)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class TimestampMixin:

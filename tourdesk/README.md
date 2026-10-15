@@ -32,6 +32,8 @@ Multiple agents can log in. Admins manage agency settings and the team.
 
 ## Run it locally
 
+Needs Python 3.9 or newer.
+
 ```bash
 cd tourdesk
 python3 -m venv .venv
