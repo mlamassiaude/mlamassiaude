@@ -1,0 +1,69 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      background: var(--ground);
+      font-family: "Inter", sans-serif;
+    }
+    .stack-card {
+      width: 460px;
+      height: 520px;
+      padding: 56px 48px;
+      border-radius: 28px;
+      background: #191b22;
+      border: 2px solid #2a2d38;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stack-num {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 34px;
+    }
+    .stack-name {
+      color: var(--ink);
+      font-size: 58px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 18px;
+    }
+    .stack-role {
+      color: #9a9cab;
+      font-size: 34px;
+      line-height: 1.3;
+    }
+  </style>
+  <div id="root" data-composition-id="stack" data-width="1920" data-height="1080">
+    <div id="stack-a" class="clip stack-card" data-start="0" data-duration="4">
+      <div class="stack-num">01</div>
+      <div><div class="stack-name">HyperFrames</div><div class="stack-role">HTML + GSAP, seeked frame by frame</div></div>
+    </div>
+    <div id="stack-b" class="clip stack-card" data-start="0" data-duration="4">
+      <div class="stack-num">02</div>
+      <div><div class="stack-name">Remotion</div><div class="stack-role">React components as video</div></div>
+    </div>
+    <div id="stack-c" class="clip stack-card" data-start="0" data-duration="4">
+      <div class="stack-num">03</div>
+      <div><div class="stack-name">FFmpeg</div><div class="stack-role">Encode, cut, mix, convert</div></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(
+      [".stack-card"],
+      { opacity: 0, y: 120, rotation: -4 },
+      { opacity: 1, y: 0, rotation: 0, duration: 0.8, ease: "back.out(1.6)", stagger: 0.18 },
+      0.1,
+    );
+    tl.to(".stack-card", { y: -14, duration: 1.6, ease: "sine.inOut", stagger: 0.18 }, 1.2);
+    tl.to(".stack-card", { opacity: 0, scale: 0.94, duration: 0.45, ease: "power2.in", stagger: 0.08 }, 3.3);
+    window.__timelines["stack"] = tl;
+  </script>
+</template>

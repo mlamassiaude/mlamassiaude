@@ -1,0 +1,6 @@
+node_modules/
+remotion/out/
+hyperframes/renders/
+hyperframes/.hyperframes/
+hyperframes/snapshots/
+verify-output/
