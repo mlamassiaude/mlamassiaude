@@ -4,3 +4,6 @@ hyperframes/renders/
 hyperframes/.hyperframes/
 hyperframes/snapshots/
 verify-output/
+projects/*/renders/
+projects/*/.hyperframes/
+projects/*/snapshots/
