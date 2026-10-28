@@ -15,7 +15,11 @@ A ready-to-use workspace for making videos with code: HyperFrames for HTML and G
 | --- | --- | --- |
 | `hyperframes/` | HyperFrames 0.8.214, GSAP 3.14.2 (vendored in `assets/vendor/`) | 8 s, 1080p30 film in two scenes with a music bed. Headline and accent colour are variables. |
 | `remotion/` | Remotion 4.0.539, React 19, TypeScript | The same film as React components, with spring animation, a slide transition, noise-driven particles and an audio fade. Comes in 16:9 (`Demo`) and 9:16 (`DemoVertical`). |
-| `scripts/` | Bash + FFmpeg 6.1 | `setup.sh` installs, `verify.sh` tests every part of the chain. |
+| `scripts/` | Bash + FFmpeg 6.1 | `setup.sh` installs, `verify.sh` tests every part of the chain, `cloud-env-setup.sh` is the version for Claude Code cloud environments. |
+
+## Claude Code cloud sessions
+
+Cloud containers start fresh each session, so global installs are lost. To have everything ready automatically, open the cloud environment menu in the session's title bar, choose Edit, and paste the contents of `scripts/cloud-env-setup.sh` into **Setup script**. New sessions will run it before starting.
 
 Extra Remotion packages already installed: `@remotion/transitions`, `@remotion/media`, `@remotion/media-utils`, `@remotion/captions`, `@remotion/shapes`, `@remotion/noise`, and `@fontsource/inter` for offline fonts.
 
