@@ -50,7 +50,7 @@ FFmpeg recipes that `verify.sh` proves work on this machine: H.264, HEVC, VP9, A
 
 ## Notes
 
-- **Agent skills.** `setup.sh` installs the HyperFrames skills (`hyperframes`, `hyperframes-cli`, `hyperframes-registry`, `media-use`) into `~/.claude/skills`, so Claude Code knows the HyperFrames contract in later sessions. Remotion's own skills can be added with `npx skills add remotion-dev/skills`.
+- **Agent skills.** `setup.sh` installs the HyperFrames skills (`hyperframes`, `hyperframes-cli`, `hyperframes-registry`, `media-use`) into `~/.claude/skills`, so Claude Code knows the HyperFrames contract in later sessions. It also installs Remotion's 12 skills from `remotion-dev/skills` (`remotion-best-practices` routes to the others: create, render, captions, studio, maps, upgrade and more).
 - **Offline-friendly rendering.** GSAP is loaded from `assets/vendor/` rather than a CDN, and Inter comes from `@fontsource`, so renders never depend on the network.
 - **Browser for Remotion.** `remotion.config.ts` reuses a Chrome Headless Shell that is already on disk (Playwright's or HyperFrames' copy, or `REMOTION_BROWSER_EXECUTABLE`). Without one, Remotion downloads its own on first render as usual.
 - **Optional AI extras** reported by `hyperframes doctor`: whisper.cpp for transcription, Kokoro for local text to speech and MusicGen for generated music. None are needed to create or render videos.

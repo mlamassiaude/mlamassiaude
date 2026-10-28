@@ -43,6 +43,12 @@ if [ ! -d "$HOME/.claude/skills/hyperframes" ]; then
   hyperframes skills update || echo "Skill install failed; run 'hyperframes skills update' later."
 fi
 
+say "Remotion agent skills (remotion-dev/skills)"
+if [ ! -d "$HOME/.claude/skills/remotion-best-practices" ]; then
+  DISABLE_TELEMETRY=1 npx --yes skills@1.7.4 add remotion-dev/skills --global --agent claude-code --skill '*' --yes --copy \
+    || echo "Skill install failed; run 'npx skills add remotion-dev/skills' later."
+fi
+
 say "Remotion project dependencies"
 (cd "$ROOT/remotion" && npm install --no-audit --no-fund)
 

@@ -13,6 +13,10 @@ hyperframes telemetry disable || true
 hyperframes browser ensure
 hyperframes skills update || echo "HyperFrames skills install failed, continuing"
 
+# Remotion's Claude skills (remotion-best-practices and the rest of remotion-dev/skills).
+DISABLE_TELEMETRY=1 npx --yes skills@1.7.4 add remotion-dev/skills --global --agent claude-code --skill '*' --yes --copy \
+  || echo "Remotion skills install failed, continuing"
+
 # Project dependencies, when the checkout is already in place.
 for studio in /home/user/*/video-studio; do
   [ -d "$studio" ] || continue
