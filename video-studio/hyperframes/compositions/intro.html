@@ -1,0 +1,53 @@
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background: radial-gradient(circle at 50% 60%, #1d1f27 0%, #0e0f13 70%);
+      font-family: "Inter", sans-serif;
+    }
+    #intro-kicker {
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+    #intro-title {
+      color: var(--ink);
+      font-size: 168px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+    #intro-bar {
+      width: 520px;
+      height: 10px;
+      background: var(--accent);
+      transform-origin: left center;
+    }
+  </style>
+  <div id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+    <div id="intro-kicker" class="clip" data-start="0.2" data-duration="3.8">HyperFrames · Remotion · FFmpeg</div>
+    <h1 id="intro-title" class="clip" data-start="0" data-duration="4" data-var-text="headline">Video Studio</h1>
+    <div id="intro-bar" class="clip" data-start="0.9" data-duration="3.1"></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#intro-kicker", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.2);
+    tl.fromTo(
+      "#intro-title",
+      { scale: 1.12, filter: "blur(10px)" },
+      { scale: 1, filter: "blur(0px)", duration: 1.1, ease: "expo.out" },
+      0,
+    );
+    tl.fromTo("#intro-bar", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power4.inOut" }, 0.9);
+    tl.to("#intro-title", { scale: 1.04, duration: 2.3, ease: "none" }, 1.1);
+    tl.to(["#intro-kicker", "#intro-title", "#intro-bar"], { opacity: 0, y: -30, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 3.45);
+    window.__timelines["intro"] = tl;
+  </script>
+</template>
